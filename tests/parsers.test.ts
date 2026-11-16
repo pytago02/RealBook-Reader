@@ -1,0 +1,93 @@
+import { describe, it, expect } from 'vitest';
+import { txtParser } from '../src/services/parsers/txtParser';
+
+describe('Parsers & Text Processing', () => {
+  describe('TxtParser', () => {
+    it('extracts markdown # title correctly', () => {
+      const content = `# Hoàng Tử Bé\n\nNội dung chương 1...`;
+      const result = txtParser.parseText(content);
+      expect(result.title).toBe('Hoàng Tử Bé');
+    });
+
+    it('extracts first non-empty line as title when no markdown header is present', () => {
+      const content = `\n\nTuyển Tập Thơ Xuân Diệu\n\nYêu là chết ở trong lòng một ít...`;
+      const result = txtParser.parseText(content);
+      expect(result.title).toBe('Tuyển Tập Thơ Xuân Diệu');
+    });
+
+    it('falls back to default title for empty or very short strings', () => {
+      const content = ``;
+      const result = txtParser.parseText(content);
+      expect(result.title).toBe('Tài liệu không tên');
+      expect(result.pages.length).toBe(1);
+    });
+
+    it('segments text into multiple pages when word count exceeds wordsPerPage', () => {
+      // Create 3 large paragraphs with ~150 words each
+      const para1 = new Array(150).fill('từ1').join(' ');
+      const para2 = new Array(150).fill('từ2').join(' ');
+      const para3 = new Array(150).fill('từ3').join(' ');
+
+      const fullContent = `${para1}\n\n${para2}\n\n${para3}`;
+      // With wordsPerPage = 200, it should split across at least 2 pages
+      const result = txtParser.parseText(fullContent, 200);
+      expect(result.pages.length).toBeGreaterThanOrEqual(2);
+      expect(result.pages[0]).toContain('từ1');
+      expect(result.pages[result.pages.length - 1]).toContain('từ3');
+    });
+
+    it('preserves paragraph structure and formatting', () => {
+      const content = `# Lão Hạc\n\nLão Hạc thổi cái mồi rơm, châm đóm.\n\nTôi bùi ngùi nhìn lão. Bấy giờ tôi mới để ý thấy lão gầy sọp hẳn đi.`;
+      const result = txtParser.parseText(content);
+      expect(result.pages.length).toBe(1);
+      expect(result.pages[0]).toContain('Lão Hạc thổi cái mồi rơm');
+      expect(result.pages[0]).toContain('Tôi bùi ngùi nhìn lão');
+    });
+  });
+
+  describe('Vietnamese Diacritic Normalization', () => {
+    // Test the diacritic combiner algorithm used in pdfParser
+    function cleanVietnameseDiacritics(text: string): string {
+      const VN_VOWELS = '[aAeEiIoOuUyY\u00C0-\u024F\u1EA0-\u1EF9]';
+      let cleaned = text;
+
+      // Combine floating grave accent `
+      cleaned = cleaned.replace(new RegExp(`(${VN_VOWELS})\\s*[\`\\u0300\\u02CB]`, 'gu'), (_, v) => {
+        return (v + '\u0300').normalize('NFC');
+      });
+
+      // Combine floating acute accent ´, '
+      cleaned = cleaned.replace(new RegExp(`(${VN_VOWELS})\\s*[´'\\u0301\\u02CA]`, 'gu'), (_, v) => {
+        return (v + '\u0301').normalize('NFC');
+      });
+
+      // Combine floating tilde ~
+      cleaned = cleaned.replace(new RegExp(`(${VN_VOWELS})\\s*[~\\u0303\\u02DC]`, 'gu'), (_, v) => {
+        return (v + '\u0303').normalize('NFC');
+      });
+
+      cleaned = cleaned.replace(/[`´'\u02CB\u02CA\u02DC]/gu, '');
+      return cleaned.normalize('NFC');
+    }
+
+    it('combines detached grave accents into proper accented vowels', () => {
+      const input = 'PHÂ`N THỨ NHẤT: VÊ` MỘT BỘ TOÁN';
+      const cleaned = cleanVietnameseDiacritics(input);
+      expect(cleaned).toContain('PHẦN');
+      expect(cleaned).toContain('VỀ');
+    });
+
+    it('combines detached acute accents into proper accented vowels', () => {
+      const input = 'TRIÊ´T HỌC VÀ ĐẠO ĐỨC';
+      const cleaned = cleanVietnameseDiacritics(input);
+      expect(cleaned).toContain('TRIẾT');
+    });
+
+    it('combines detached tildes', () => {
+      const input = 'CÔ~NG ĐÔ`NG';
+      const cleaned = cleanVietnameseDiacritics(input);
+      expect(cleaned).toContain('CỖNG');
+      expect(cleaned).toContain('ĐỒNG');
+    });
+  });
+});

@@ -1,0 +1,8 @@
+{
+  "appId": "com.realbook.reader",
+  "appName": "RealBook Reader",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

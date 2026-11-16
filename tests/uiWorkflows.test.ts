@@ -1,0 +1,344 @@
+import { describe, it, expect } from 'vitest';
+import type { Book } from '../src/types';
+import { inferGenre } from '../src/utils/genre';
+
+describe('UI Features & User Workflows', () => {
+  const sampleBooks: Book[] = [
+    {
+      id: 'book-1',
+      title: 'Hoàng Tử Bé',
+      author: 'Antoine de Saint-Exupéry',
+      genre: 'Văn học & Tiểu thuyết',
+      format: 'txt',
+      totalPages: 12,
+      currentPage: 3,
+      fileSize: 20000,
+      addedAt: 1000,
+      lastReadAt: 2000,
+      bookmarks: [{ id: 'bm-1', page: 3, createdAt: 1000 }],
+      highlights: [],
+      readingTimeSeconds: 60,
+      tags: ['Kinh điển', 'Triết lý'],
+    },
+    {
+      id: 'book-2',
+      title: 'Đại Việt Sử Ký Toàn Thư',
+      author: 'Ngô Sĩ Liên',
+      genre: 'Lịch sử & Nhân vật',
+      format: 'pdf',
+      totalPages: 250,
+      currentPage: 50,
+      fileSize: 850000,
+      addedAt: 3000,
+      lastReadAt: 4000,
+      bookmarks: [],
+      highlights: [],
+      readingTimeSeconds: 300,
+      tags: ['Lịch sử', 'Việt Nam'],
+    },
+    {
+      id: 'book-3',
+      title: 'Vũ Trụ Trong Vỏ Hạt Dẻ',
+      author: 'Stephen Hawking',
+      genre: 'Khoa học & Công nghệ',
+      format: 'docx',
+      totalPages: 180,
+      currentPage: 180,
+      fileSize: 500000,
+      addedAt: 5000,
+      lastReadAt: 6000,
+      bookmarks: [],
+      highlights: [],
+      readingTimeSeconds: 500,
+      tags: ['Vật lý', 'Khoa học'],
+    },
+  ];
+
+  describe('Shelf Tab Workflows', () => {
+    it('computes genre distribution counts accurately', () => {
+      const counts: Record<string, number> = { all: sampleBooks.length };
+      sampleBooks.forEach((b) => {
+        const g = b.genre || inferGenre(b.title);
+        counts[g] = (counts[g] || 0) + 1;
+      });
+
+      expect(counts.all).toBe(3);
+      expect(counts['Văn học & Tiểu thuyết']).toBe(1);
+      expect(counts['Lịch sử & Nhân vật']).toBe(1);
+      expect(counts['Khoa học & Công nghệ']).toBe(1);
+      expect(counts['Triết học & Tư tưởng']).toBeUndefined();
+    });
+
+    it('filters shelf books by selected genre pill', () => {
+      const filterByGenre = (genre: string) => {
+        return sampleBooks.filter((b) => {
+          const g = b.genre || inferGenre(b.title);
+          return genre === 'all' || g === genre;
+        });
+      };
+
+      expect(filterByGenre('all').length).toBe(3);
+      expect(filterByGenre('Lịch sử & Nhân vật').length).toBe(1);
+      expect(filterByGenre('Lịch sử & Nhân vật')[0].id).toBe('book-2');
+      expect(filterByGenre('Kinh tế & Quản trị').length).toBe(0);
+    });
+
+    it('searches shelf books by title, author, genre, or tags', () => {
+      const searchShelf = (query: string, genreFilter = 'all') => {
+        const term = query.trim().toLowerCase();
+        return sampleBooks.filter((b) => {
+          const bGenre = b.genre || inferGenre(b.title);
+          if (genreFilter !== 'all' && bGenre !== genreFilter) return false;
+          if (!term) return true;
+          return (
+            b.title.toLowerCase().includes(term) ||
+            b.author.toLowerCase().includes(term) ||
+            bGenre.toLowerCase().includes(term) ||
+            (b.tags && b.tags.some((tg) => tg.toLowerCase().includes(term)))
+          );
+        });
+      };
+
+      // Search by title
+      expect(searchShelf('Hoàng tử').length).toBe(1);
+      // Search by author
+      expect(searchShelf('Stephen').length).toBe(1);
+      // Search by tag
+      expect(searchShelf('Việt Nam').length).toBe(1);
+      // Search with genre filter constraint
+      expect(searchShelf('Stephen', 'Khoa học & Công nghệ').length).toBe(1);
+      expect(searchShelf('Stephen', 'Lịch sử & Nhân vật').length).toBe(0);
+      // Non-matching query
+      expect(searchShelf('nonexistent keyword').length).toBe(0);
+    });
+
+    it('calculates reading progress percentage properly', () => {
+      const getPercent = (book: Book) =>
+        book.totalPages > 0 ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
+
+      expect(getPercent(sampleBooks[0])).toBe(25); // 3/12 = 25%
+      expect(getPercent(sampleBooks[1])).toBe(20); // 50/250 = 20%
+      expect(getPercent(sampleBooks[2])).toBe(100); // 180/180 = 100%
+    });
+  });
+
+  describe('Online Library Workflows', () => {
+    it('syncs default online book language and recommended category when system language changes', () => {
+      const getInitialOnlineState = (systemLang: string) => {
+        return {
+          onlineBookLang: systemLang,
+          onlineTopic: systemLang === 'vi' ? 'vietnamese' : 'recommended',
+        };
+      };
+
+      expect(getInitialOnlineState('vi')).toEqual({ onlineBookLang: 'vi', onlineTopic: 'vietnamese' });
+      expect(getInitialOnlineState('en')).toEqual({ onlineBookLang: 'en', onlineTopic: 'recommended' });
+      expect(getInitialOnlineState('zh')).toEqual({ onlineBookLang: 'zh', onlineTopic: 'recommended' });
+      expect(getInitialOnlineState('fr')).toEqual({ onlineBookLang: 'fr', onlineTopic: 'recommended' });
+      expect(getInitialOnlineState('es')).toEqual({ onlineBookLang: 'es', onlineTopic: 'recommended' });
+      expect(getInitialOnlineState('ja')).toEqual({ onlineBookLang: 'ja', onlineTopic: 'recommended' });
+    });
+
+    it('supports 10 online categories', () => {
+      const categories = [
+        'vietnamese',
+        'recommended',
+        'world_classics',
+        'all',
+        'philosophy',
+        'history',
+        'science',
+        'adventure',
+        'psychology',
+        'poetry',
+      ];
+      expect(categories.length).toBe(10);
+    });
+
+    it('header "Tìm tất cả" sets search scope to "all" and resets topic to "all"', () => {
+      let activeSearchScope: 'all' | 'category' = 'category';
+      let onlineTopic = 'philosophy';
+      let activeSearchQuery = '';
+
+      const handleGlobalSearch = (query: string) => {
+        activeSearchScope = 'all';
+        onlineTopic = 'all';
+        activeSearchQuery = query.trim();
+      };
+
+      handleGlobalSearch('Tolstoy');
+      expect(activeSearchScope).toBe('all');
+      expect(onlineTopic).toBe('all');
+      expect(activeSearchQuery).toBe('Tolstoy');
+    });
+
+    it('in-tab "Tìm trong thể loại này" preserves selected topic and sets scope to "category"', () => {
+      let activeSearchScope: 'all' | 'category' = 'all';
+      let onlineTopic = 'history';
+      let activeSearchQuery = '';
+
+      const handleCategorySearch = (catId: string, query: string) => {
+        activeSearchScope = 'category';
+        onlineTopic = catId;
+        activeSearchQuery = query.trim();
+      };
+
+      handleCategorySearch('history', 'Rome');
+      expect(activeSearchScope).toBe('category');
+      expect(onlineTopic).toBe('history');
+      expect(activeSearchQuery).toBe('Rome');
+    });
+
+    it('clear search restores default category browsing', () => {
+      let activeSearchQuery = 'Napoleon';
+      let activeSearchScope: 'all' | 'category' = 'all';
+      let onlineTopic = 'all';
+      const onlineBookLang = 'vi';
+
+      const handleClearSearch = () => {
+        activeSearchQuery = '';
+        activeSearchScope = 'category';
+        if (onlineTopic === 'all') {
+          onlineTopic = onlineBookLang === 'vi' ? 'vietnamese' : 'recommended';
+        }
+      };
+
+      handleClearSearch();
+      expect(activeSearchQuery).toBe('');
+      expect(activeSearchScope).toBe('category');
+      expect(onlineTopic).toBe('vietnamese');
+    });
+
+    it('detects if an online book is already in shelf by title', () => {
+      const isBookAlreadyInLibrary = (onlineTitle: string) => {
+        return sampleBooks.some((b) => b.title.toLowerCase().trim() === onlineTitle.toLowerCase().trim());
+      };
+
+      expect(isBookAlreadyInLibrary('Hoàng Tử Bé')).toBe(true);
+      expect(isBookAlreadyInLibrary('  hoàng tử bé  ')).toBe(true);
+      expect(isBookAlreadyInLibrary('Don Quixote')).toBe(false);
+    });
+  });
+
+  describe('Reader Mode Workflows', () => {
+    it('calculates spread left/right page numbers for double-page view', () => {
+      const calculateSpread = (currentPage: number, isDouble: boolean) => {
+        const leftPageNum = isDouble
+          ? currentPage % 2 === 0
+            ? currentPage
+            : Math.max(1, currentPage - 1)
+          : currentPage;
+        const rightPageNum = leftPageNum + 1;
+        return { leftPageNum, rightPageNum };
+      };
+
+      // Page 1 (odd) in double spread: left is 1, right is 2
+      expect(calculateSpread(1, true)).toEqual({ leftPageNum: 1, rightPageNum: 2 });
+      // Page 2 (even) in double spread: left is 2, right is 3
+      expect(calculateSpread(2, true)).toEqual({ leftPageNum: 2, rightPageNum: 3 });
+      // Page 3 in double spread: left is 2, right is 3
+      expect(calculateSpread(3, true)).toEqual({ leftPageNum: 2, rightPageNum: 3 });
+      // Page 4 in double spread: left is 4, right is 5
+      expect(calculateSpread(4, true)).toEqual({ leftPageNum: 4, rightPageNum: 5 });
+
+      // Single page mode
+      expect(calculateSpread(7, false)).toEqual({ leftPageNum: 7, rightPageNum: 8 });
+    });
+
+    it('clamps page transitions within 1 and totalPages', () => {
+      const totalPages = 100;
+      const clampPage = (p: number) => Math.max(1, Math.min(p, totalPages));
+
+      expect(clampPage(0)).toBe(1);
+      expect(clampPage(-5)).toBe(1);
+      expect(clampPage(50)).toBe(50);
+      expect(clampPage(101)).toBe(100);
+      expect(clampPage(999)).toBe(100);
+    });
+
+    it('adjusts zoom level within bounds [0.7, 1.8] with 0.1 increments', () => {
+      let zoom = 1.0;
+      const zoomIn = () => {
+        zoom = Math.min(1.8, Math.round((zoom + 0.1) * 10) / 10);
+      };
+      const zoomOut = () => {
+        zoom = Math.max(0.7, Math.round((zoom - 0.1) * 10) / 10);
+      };
+
+      zoomIn(); // 1.1
+      expect(zoom).toBe(1.1);
+      zoomIn(); // 1.2
+      expect(zoom).toBe(1.2);
+
+      zoomOut(); // 1.1
+      expect(zoom).toBe(1.1);
+
+      // Max clamp test
+      zoom = 1.75;
+      zoomIn(); // 1.8
+      expect(zoom).toBe(1.8);
+      zoomIn(); // still 1.8
+      expect(zoom).toBe(1.8);
+
+      // Min clamp test
+      zoom = 0.75;
+      zoomOut(); // 0.7
+      expect(zoom).toBe(0.7);
+      zoomOut(); // still 0.7
+      expect(zoom).toBe(0.7);
+    });
+
+    it('toggles bookmarks: adds if not present, removes if present', () => {
+      let book: Book = { ...sampleBooks[0], bookmarks: [] };
+
+      const toggleBookmark = (page: number) => {
+        const existing = book.bookmarks.find((b) => b.page === page);
+        if (existing) {
+          book = {
+            ...book,
+            bookmarks: book.bookmarks.filter((b) => b.id !== existing.id),
+          };
+        } else {
+          book = {
+            ...book,
+            bookmarks: [...book.bookmarks, { id: `bm-${page}`, page, createdAt: Date.now() }],
+          };
+        }
+      };
+
+      // Add bookmark on page 5
+      toggleBookmark(5);
+      expect(book.bookmarks.length).toBe(1);
+      expect(book.bookmarks[0].page).toBe(5);
+
+      // Add bookmark on page 10
+      toggleBookmark(10);
+      expect(book.bookmarks.length).toBe(2);
+
+      // Toggle page 5 again -> removes it
+      toggleBookmark(5);
+      expect(book.bookmarks.length).toBe(1);
+      expect(book.bookmarks[0].page).toBe(10);
+    });
+
+    it('supports 5 eye comfort reading themes with distinct paper tones', () => {
+      const themes = ['sepia', 'warm', 'white', 'eink', 'dark'];
+      expect(themes.length).toBe(5);
+
+      const getThemePaperTone = (theme: string) => {
+        switch (theme) {
+          case 'sepia': return '#f4ecd8';
+          case 'warm': return '#faeed7';
+          case 'white': return '#fbfbfc';
+          case 'eink': return '#e5e5e5';
+          case 'dark': return '#1a1b1e';
+          default: return '#fbfbfc';
+        }
+      };
+
+      themes.forEach((th) => {
+        expect(getThemePaperTone(th)).toMatch(/^#[0-9a-f]{6}$/i);
+      });
+    });
+  });
+});

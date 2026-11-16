@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1118"/>
+      <stop offset="100%" stop-color="#181d2a"/>
+    </linearGradient>
+
+    <!-- Border Gradient -->
+    <linearGradient id="favBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="60%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+
+    <!-- Page Gradients -->
+    <linearGradient id="favLeftPage" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="50%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+
+    <linearGradient id="favTurnGold" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="90%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#fef08a"/>
+    </linearGradient>
+
+    <linearGradient id="favCurlBack" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <linearGradient id="favEmerald" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#favBg)"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="13.5" fill="none" stroke="url(#favBorder)" stroke-width="1.5" stroke-opacity="0.8"/>
+
+  <!-- Book Hardcover Base -->
+  <path d="M 32 49 L 10 44 C 9.5 44 9 43.5 9 43 L 10 26 C 10 25.5 10.5 25 11 25.2 L 32 29 Z" fill="#1e2433"/>
+  <path d="M 32 49 L 54 44 C 54.5 44 55 43.5 55 43 L 54 26 C 54 25.5 53.5 25 53 25.2 L 32 29 Z" fill="#242c3d"/>
+
+  <!-- Left Open Pages -->
+  <path d="M 32 46 C 24 44 17 43 12 42 L 13 24 C 18 25.5 25 26.5 32 28 Z" fill="url(#favLeftPage)"/>
+
+  <!-- Right Open Base Page -->
+  <path d="M 32 46 C 40 44 47 43 52 42 L 51 24 C 46 25.5 39 26.5 32 28 Z" fill="#94a3b8"/>
+
+  <!-- Turning Page (3D Gold Curl) -->
+  <!-- Underside shadow/fold -->
+  <path d="M 32 28 C 34 25 38 20 44 17 C 48 15 51 16 52 18 C 49 17 45 19 42 23 C 38 28 35 37 32 46 Z" fill="url(#favCurlBack)"/>
+  <!-- Front crest of curling page -->
+  <path d="M 32 28 C 36 29 41 29 45 26 C 49 23 51 19 52 18 C 50 16 46 15 43 17 C 37 20 33 25 32 28 Z" fill="url(#favTurnGold)"/>
+  <!-- Highlight rim along crest -->
+  <path d="M 32 28 C 37 21 43 17 52 18" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-linecap="round"/>
+
+  <!-- Center Emerald Bookmark Ribbon -->
+  <path d="M 30.5 24 L 30.5 50 L 32 48.5 L 33.5 50 L 33.5 24 Z" fill="url(#favEmerald)"/>
+
+  <!-- Golden Sparkle Accent -->
+  <path d="M 48 13 Q 48 15 50 15 Q 48 15 48 17 Q 48 15 46 15 Q 48 15 48 13 Z" fill="#fbbf24"/>
+</svg>

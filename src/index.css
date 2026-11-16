@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+}
+
+/* Custom fonts */
+/* Custom fonts with Vietnamese typography fallbacks */
+.font-bevietnampro {
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.font-ebgaramond {
+  font-family: 'EB Garamond', 'Garamond', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-merriweather {
+  font-family: 'Merriweather', 'Lora', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-literata {
+  font-family: 'Literata', 'Merriweather', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-lora {
+  font-family: 'Lora', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-playfair,
+.font-playfairdisplay {
+  font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+}
+
+.font-inter {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 3D Realistic Book Perspective */
+.book-3d-container {
+  perspective: 2400px;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.book-spine-shadow-left {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.08) 6%, rgba(0, 0, 0, 0) 18%);
+}
+
+.book-spine-shadow-right {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.08) 6%, rgba(0, 0, 0, 0) 18%);
+}
+
+.book-edge-stack-left {
+  box-shadow: -4px 0 8px -2px rgba(0,0,0,0.25), -10px 0 16px -4px rgba(0,0,0,0.18);
+}
+
+.book-edge-stack-right {
+  box-shadow: 4px 0 8px -2px rgba(0,0,0,0.25), 10px 0 16px -4px rgba(0,0,0,0.18);
+}
+
+/* Corner Curl Visual Hints */
+.corner-curl-right {
+  background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.18) 60%, rgba(255,255,255,0.4) 100%);
+  filter: drop-shadow(-3px -3px 4px rgba(0,0,0,0.2));
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.corner-curl-left {
+  background: linear-gradient(225deg, transparent 50%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.18) 60%, rgba(255,255,255,0.4) 100%);
+  filter: drop-shadow(3px -3px 4px rgba(0,0,0,0.2));
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Eye Comfort Themes */
+.theme-white {
+  background-color: #fbfbfc;
+  color: #1a1a1c;
+}
+
+.theme-sepia {
+  background-color: #f4ecd8;
+  color: #433422;
+}
+
+.theme-warm {
+  background-color: #faeed7;
+  color: #3e3223;
+}
+
+.theme-eink {
+  background-color: #e5e5e5;
+  color: #111111;
+  filter: contrast(1.05);
+}
+
+.theme-dark {
+  background-color: #1a1b1e;
+  color: #d1d5db;
+}
+
+/* Paper noise texture emulation */
+.paper-texture {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 0);
+  background-size: 8px 8px;
+}
+
+/* Ribbon Bookmark Animation */
+@keyframes ribbonWave {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.5deg); }
+}
+
+.ribbon-bookmark {
+  animation: ribbonWave 4s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Custom Scrollbar for outline / notes */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5);
+}

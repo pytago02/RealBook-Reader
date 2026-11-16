@@ -1,0 +1,73 @@
+{
+  "name": "realbook-reader",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ứng dụng đọc sách chân thực như sách giấy, bảo vệ mắt và tối giản",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:exe": "npm run build && electron-builder --win --x64",
+    "cap:sync": "npm run build && npx cap sync android",
+    "test": "vitest run",
+    "icons:generate": "node scripts/generate-icons.cjs",
+    "preview": "vite preview",
+    "app": "npm run build && cross-env ELECTRON_RUN_AS_NODE= electron electron/main.cjs",
+    "app:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= VITE_DEV_SERVER_URL=http://localhost:5173 electron electron/main.cjs\""
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.6.2",
+    "idb-keyval": "^6.3.0",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.73.0",
+    "mammoth": "^1.13.0",
+    "page-flip": "^2.0.7",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/cli": "^8.6.2",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.7",
+    "cross-env": "^10.1.0",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
+    "oxlint": "^1.90.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0",
+    "wait-on": "^9.5.1"
+  },
+  "build": {
+    "appId": "com.realbook.reader",
+    "productName": "RealBook Reader",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "RealBook Reader"
+    }
+  }
+}
