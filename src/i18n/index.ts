@@ -108,6 +108,9 @@ export interface TranslationDictionary {
     zoomIn: string;
     zoomOut: string;
     resetZoom: string;
+    focusMode: string;
+    enterFocusMode: string;
+    exitFocusMode: string;
   };
   comfortModal: {
     title: string;
@@ -236,6 +239,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: 'Phóng to',
       zoomOut: 'Thu nhỏ',
       resetZoom: 'Thu phóng mặc định',
+      focusMode: 'Chế độ tập trung',
+      enterFocusMode: 'Bật chế độ tập trung (ẩn thanh công cụ)',
+      exitFocusMode: 'Thoát chế độ tập trung (Esc)',
     },
     comfortModal: {
       title: 'Giao diện & Bảo vệ mắt',
@@ -363,6 +369,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: 'Zoom in',
       zoomOut: 'Zoom out',
       resetZoom: 'Reset zoom',
+      focusMode: 'Focus Mode',
+      enterFocusMode: 'Enter Focus Mode (hide toolbars)',
+      exitFocusMode: 'Exit Focus Mode (Esc)',
     },
     comfortModal: {
       title: 'Theme & Eye Comfort',
@@ -490,6 +499,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: '放大页面',
       zoomOut: '缩小页面',
       resetZoom: '恢复默认缩放',
+      focusMode: '专注模式',
+      enterFocusMode: '进入专注模式 (隐藏工具栏)',
+      exitFocusMode: '退出专注模式 (Esc)',
     },
     comfortModal: {
       title: '护眼配色与显示调节',
@@ -617,6 +629,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: 'Zoom avant',
       zoomOut: 'Zoom arrière',
       resetZoom: 'Zoom par défaut',
+      focusMode: 'Mode Concentration',
+      enterFocusMode: 'Activer le mode concentration (masquer la barre)',
+      exitFocusMode: 'Quitter le mode concentration (Échap)',
     },
     comfortModal: {
       title: 'Thème et confort visuel',
@@ -744,6 +759,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: 'Acercar',
       zoomOut: 'Alejar',
       resetZoom: 'Zoom original',
+      focusMode: 'Modo Enfoque',
+      enterFocusMode: 'Activar modo enfoque (ocultar barras)',
+      exitFocusMode: 'Salir del modo enfoque (Esc)',
     },
     comfortModal: {
       title: 'Tema y descanso visual',
@@ -871,6 +889,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       zoomIn: '拡大',
       zoomOut: '縮小',
       resetZoom: '元の倍率に戻す',
+      focusMode: '集中モード',
+      enterFocusMode: '集中モードをオン (ツールバー非表示)',
+      exitFocusMode: '集中モードを終了 (Esc)',
     },
     comfortModal: {
       title: 'テーマと目の保護',

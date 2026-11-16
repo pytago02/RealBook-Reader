@@ -12,6 +12,7 @@ interface RealisticBookProps {
   pdfDoc: pdfjsLib.PDFDocumentProxy | null;
   textPages: string[] | null;
   isBookmarked: boolean;
+  isFocusMode?: boolean;
   onPageChange: (newPage: number) => void;
   onExtractPage?: (pageNum: number) => Promise<string>;
 }
@@ -24,6 +25,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   pdfDoc,
   textPages,
   isBookmarked,
+  isFocusMode = false,
   onPageChange,
   onExtractPage,
 }) => {
@@ -453,18 +455,18 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           {/* LEFT PAGE */}
           <div
             key={`page-left-${leftNum}`}
-            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-2' : 'p-6 md:p-10'} border-r border-black/10 book-edge-stack-left ${getThemeClass()} transition-colors duration-200`}
+            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-r border-black/10 book-edge-stack-left ${getThemeClass()} transition-colors duration-200`}
           >
             <div className="absolute inset-y-0 right-0 w-16 book-spine-shadow-right pointer-events-none z-20" />
             {!isScanMode && (
-              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-3">
+              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
                 <span className="truncate max-w-[200px]">{book.title}</span>
                 <span>{leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
               </div>
             )}
             {renderFormattedBookPage(leftNum, isCenter)}
             {!isScanMode && (
-              <div className="text-center text-[11px] opacity-40 font-mono mt-2">
+              <div className="text-center text-[11px] opacity-40 font-mono mt-1">
                 {leftNum <= totalPages && leftNum >= 1 ? `${leftNum} / ${totalPages}` : ''}
               </div>
             )}
@@ -476,18 +478,18 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           {/* RIGHT PAGE */}
           <div
             key={`page-right-${rightNum}`}
-            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-2' : 'p-6 md:p-10'} border-l border-black/10 book-edge-stack-right ${getThemeClass()} transition-colors duration-200`}
+            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-l border-black/10 book-edge-stack-right ${getThemeClass()} transition-colors duration-200`}
           >
             <div className="absolute inset-y-0 left-0 w-16 book-spine-shadow-left pointer-events-none z-20" />
             {!isScanMode && (
-              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-3">
+              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
                 <span>{rightNum <= totalPages && rightNum >= 1 ? rightNum : ''}</span>
                 <span className="truncate max-w-[200px]">{book.author || ''}</span>
               </div>
             )}
             {renderFormattedBookPage(rightNum, isCenter)}
             {!isScanMode && (
-              <div className="text-center text-[11px] opacity-40 font-mono mt-2">
+              <div className="text-center text-[11px] opacity-40 font-mono mt-1">
                 {rightNum <= totalPages && rightNum >= 1 ? `${rightNum} / ${totalPages}` : ''}
               </div>
             )}
@@ -500,18 +502,18 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
     return (
       <div
         key={`page-single-${leftNum}`}
-        className={`w-full h-full flex flex-col ${isScanMode ? 'p-2' : 'p-8 md:p-12'} rounded-2xl shadow-sm border border-black/10 relative ${getThemeClass()} transition-colors duration-200`}
+        className={`w-full h-full flex flex-col ${isScanMode ? 'p-1' : 'px-5 py-2.5 sm:px-8 sm:py-3 md:px-10 md:py-3.5'} rounded-2xl shadow-sm border border-black/10 relative ${getThemeClass()} transition-colors duration-200`}
       >
         <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/20 to-transparent pointer-events-none rounded-l-2xl" />
         {!isScanMode && (
-          <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-3">
+          <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
             <span className="truncate max-w-[250px]">{book.title}</span>
             <span>Trang {leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
           </div>
         )}
         {renderFormattedBookPage(leftNum, isCenter)}
         {!isScanMode && (
-          <div className="text-center text-xs opacity-40 font-mono mt-2">
+          <div className="text-center text-xs opacity-40 font-mono mt-1">
             {leftNum <= totalPages && leftNum >= 1 ? `Trang ${leftNum} / ${totalPages}` : ''}
           </div>
         )}
@@ -627,9 +629,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       ref={containerRef}
       onMouseDown={handleStartDrag}
       onTouchStart={handleStartDrag}
-      className={`relative w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden select-none ${
-        isDragging ? 'cursor-grabbing' : 'cursor-grab'
-      }`}
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden select-none ${
+        isFocusMode ? 'p-1 sm:p-2' : 'pt-13 pb-14 px-2 sm:px-4'
+      } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       style={{
         filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`,
       }}
@@ -663,9 +665,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       <div
         className="relative flex rounded-xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] border border-black/10 select-none overflow-hidden"
         style={{
-          maxWidth: isDouble ? 'min(96vw, 1560px)' : 'min(92vw, 980px)',
+          maxWidth: isDouble ? 'min(98vw, 1800px)' : 'min(96vw, 1100px)',
           width: '100%',
-          height: 'min(92vh, 960px)',
+          height: isFocusMode ? 'calc(100vh - 12px)' : 'calc(100vh - 116px)',
         }}
       >
         {/* Silk Ribbon Bookmark */}

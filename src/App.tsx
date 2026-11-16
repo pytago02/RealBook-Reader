@@ -13,10 +13,11 @@ import { ZenToolbar } from './components/ZenToolbar';
 import { EyeComfortControl } from './components/EyeComfortControl';
 import { TypographyControl } from './components/TypographyControl';
 import { TocAndBookmarksModal } from './components/TocAndBookmarksModal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, EyeOff } from 'lucide-react';
 import { freeBooksApi, type OnlineBook } from './services/freeBooksApi';
 import { inferGenre } from './utils/genre';
 import { ToastContainer, type ToastMessage } from './components/Toast';
+import { getTranslation } from './i18n';
 
 export const App: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -67,9 +68,8 @@ export const App: React.FC = () => {
   const [loadingText, setLoadingText] = useState<string>('Đang mở sách...');
 
   // UI state
-  const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(true);
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const hideToolbarTimeout = useRef<number | null>(null);
   const inFlightExtractionsRef = useRef<Set<number>>(new Set());
 
   // Modals
@@ -90,32 +90,29 @@ export const App: React.FC = () => {
     init();
   }, []);
 
-  // Idle timer to auto-hide toolbar when reading
-  const resetToolbarTimer = useCallback(() => {
-    setIsToolbarVisible(true);
-    if (hideToolbarTimeout.current) {
-      window.clearTimeout(hideToolbarTimeout.current);
-    }
-    // Auto hide after 3.5 seconds
-    hideToolbarTimeout.current = window.setTimeout(() => {
-      if (!isThemeModalOpen && !isTypoModalOpen && !isTocModalOpen) {
-        setIsToolbarVisible(false);
-      }
-    }, 3500);
-  }, [isThemeModalOpen, isTypoModalOpen, isTocModalOpen]);
-
+  // Keyboard shortcut listener (Esc to exit focus mode, F to toggle)
   useEffect(() => {
     if (!currentBook) return;
 
-    const handleMouseMove = () => resetToolbarTimer();
-    window.addEventListener('mousemove', handleMouseMove);
-    resetToolbarTimer();
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (hideToolbarTimeout.current) window.clearTimeout(hideToolbarTimeout.current);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      } else if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        setIsFocusMode((prev) => !prev);
+      }
     };
-  }, [currentBook, resetToolbarTimer]);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentBook, isFocusMode]);
 
   // Fullscreen change listener
   useEffect(() => {
@@ -138,6 +135,7 @@ export const App: React.FC = () => {
   const handleOpenBook = async (book: Book, preloadedDoc?: pdfjsLib.PDFDocumentProxy) => {
     setIsLoading(true);
     setLoadingText('Đang nạp dữ liệu sách...');
+    setIsFocusMode(false);
     setCurrentBook(book);
 
     // Failsafe timer: loading overlay will NEVER spin longer than 4.5 seconds under any circumstance
@@ -487,6 +485,7 @@ export const App: React.FC = () => {
 
   // Back to Library
   const handleBackToLibrary = () => {
+    setIsFocusMode(false);
     setCurrentBook(null);
     setPdfDoc(null);
     setTextPages(null);
@@ -526,12 +525,25 @@ export const App: React.FC = () => {
       ) : (
         /* Reading Screen */
         <div className="relative w-full h-full flex flex-col items-center justify-center">
+          {/* Floating Focus Mode Exit Pill */}
+          {isFocusMode && (
+            <button
+              onClick={() => setIsFocusMode(false)}
+              className="fixed top-3 right-5 z-50 px-3.5 py-1.5 rounded-full bg-black/75 hover:bg-black/95 text-white/80 hover:text-white backdrop-blur-md border border-white/20 text-xs font-medium flex items-center gap-1.5 transition-all opacity-25 hover:opacity-100 shadow-2xl cursor-pointer"
+              title={getTranslation(settings.language || 'vi').reader.exitFocusMode}
+            >
+              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+              <span>{getTranslation(settings.language || 'vi').reader.exitFocusMode}</span>
+            </button>
+          )}
+
           {/* Zen Toolbar */}
           <ZenToolbar
             book={currentBook}
             currentPage={currentBook.currentPage}
             totalPages={currentBook.totalPages}
-            isVisible={isToolbarVisible}
+            isVisible={!isFocusMode}
+            isFocusMode={isFocusMode}
             settings={settings}
             isFullscreen={isFullscreen}
             isBookmarked={isCurrentPageBookmarked}
@@ -545,6 +557,7 @@ export const App: React.FC = () => {
             onOpenTocModal={() => setIsTocModalOpen(true)}
             onToggleSound={() => handleUpdateSettings({ soundEnabled: !settings.soundEnabled })}
             onToggleFullscreen={toggleFullscreen}
+            onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
             onToggleSpread={() =>
               handleUpdateSettings({
                 pageSpread: settings.pageSpread === 'double' ? 'single' : 'double',
@@ -586,6 +599,7 @@ export const App: React.FC = () => {
                 totalPages={currentBook.totalPages}
                 textPages={textPages}
                 settings={settings}
+                isFocusMode={isFocusMode}
                 onPageChange={handlePageChange}
               />
             ) : (
@@ -597,6 +611,7 @@ export const App: React.FC = () => {
                 pdfDoc={pdfDoc}
                 textPages={textPages}
                 isBookmarked={isCurrentPageBookmarked}
+                isFocusMode={isFocusMode}
                 onPageChange={handlePageChange}
                 onExtractPage={handleExtractPage}
               />

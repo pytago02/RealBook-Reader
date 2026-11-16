@@ -23,12 +23,18 @@ if (typeof electron === 'string' || !electron.app) {
 }
 
 function startApp(electron) {
-  const { app, BrowserWindow, Menu } = electron;
+  const { app, BrowserWindow, Menu, nativeImage } = electron;
+  const fs = require('fs');
   const path = require('path');
 
   // Set Windows App User Model ID so the Windows Taskbar associates the custom icon and grouping correctly
   if (process.platform === 'win32') {
-    app.setAppUserModelId('com.realbook.reader');
+    if (app.isPackaged) {
+      app.setAppUserModelId('com.realbook.reader');
+    } else {
+      // In dev mode, using process.execPath allows the custom window icon to bind directly to the taskbar item
+      app.setAppUserModelId(process.execPath);
+    }
   }
 
   // Dedicated data directory to prevent collisions
@@ -52,9 +58,22 @@ function startApp(electron) {
 
   function createWindow() {
     const isWin = process.platform === 'win32';
-    // Use multi-layer ICO on Windows (16, 32, 48, 64, 128, 256) for crisp taskbar & titlebar; PNG on macOS/Linux
-    const iconFile = isWin ? 'icon.ico' : 'icon.png';
-    const iconPath = path.join(__dirname, '../public', iconFile);
+    const iconPathIco = path.join(__dirname, '../public/icon.ico');
+    const iconPathPng = path.join(__dirname, '../public/icon.png');
+    let appIcon = null;
+
+    if (fs.existsSync(iconPathPng)) {
+      const pngImg = nativeImage.createFromPath(iconPathPng);
+      if (!pngImg.isEmpty()) {
+        appIcon = pngImg;
+      }
+    }
+    if (!appIcon && fs.existsSync(iconPathIco)) {
+      const icoImg = nativeImage.createFromPath(iconPathIco);
+      if (!icoImg.isEmpty()) {
+        appIcon = icoImg;
+      }
+    }
 
     mainWindow = new BrowserWindow({
       width: 1280,
@@ -63,7 +82,7 @@ function startApp(electron) {
       minHeight: 560,
       backgroundColor: '#121316',
       title: 'RealBook Reader',
-      icon: iconPath,
+      icon: appIcon || (isWin ? iconPathIco : iconPathPng),
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: false,
@@ -73,8 +92,8 @@ function startApp(electron) {
       },
     });
 
-    if (isWin) {
-      mainWindow.setIcon(iconPath);
+    if (appIcon) {
+      mainWindow.setIcon(appIcon);
     }
 
     Menu.setApplicationMenu(null);

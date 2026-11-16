@@ -7,6 +7,7 @@ interface ReflowReaderProps {
   totalPages: number;
   textPages: string[];
   settings: ReaderSettings;
+  isFocusMode?: boolean;
   onPageChange: (newPage: number) => void;
 }
 
@@ -16,6 +17,7 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
   totalPages,
   textPages,
   settings,
+  isFocusMode = false,
   onPageChange,
 }) => {
   const typo = settings.typography;
@@ -55,15 +57,17 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
 
   return (
     <div
-      className={`w-full h-full flex flex-col items-center overflow-y-auto ${getThemeClass()} transition-colors duration-300 py-16`}
+      className={`w-full h-full flex flex-col items-center overflow-y-auto ${getThemeClass()} transition-colors duration-300 ${
+        isFocusMode ? 'py-4 px-4 sm:px-6' : 'pt-16 pb-20 px-4 sm:px-6'
+      }`}
       style={{
         filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`,
       }}
     >
       <article className={`w-full ${getMarginClass()} my-auto`}>
         {/* Book Header / Chapter Meta */}
-        <div className="mb-8 pb-4 border-b border-current/10 flex justify-between items-center text-xs opacity-50 font-mono">
-          <span className="font-semibold uppercase tracking-wider">{book.title}</span>
+        <div className="mb-4 pb-2 border-b border-current/10 flex justify-between items-center text-xs opacity-50 font-mono">
+          <span className="font-semibold uppercase tracking-wider truncate max-w-[70%]">{book.title}</span>
           <span>Trang {currentPage} / {totalPages}</span>
         </div>
 
@@ -94,7 +98,7 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
         </div>
 
         {/* Bottom Pagination Controls in Reflow */}
-        <div className="mt-12 pt-6 border-t border-current/10 flex justify-between items-center text-sm font-mono opacity-60">
+        <div className="mt-6 pt-3 border-t border-current/10 flex justify-between items-center text-sm font-mono opacity-60">
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage <= 1}

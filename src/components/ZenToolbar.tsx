@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ZoomIn,
   ZoomOut,
+  Focus,
 } from 'lucide-react';
 import type { Book, ReaderSettings } from '../types';
 import { getTranslation } from '../i18n';
@@ -29,6 +30,7 @@ interface ZenToolbarProps {
   settings: ReaderSettings;
   isFullscreen: boolean;
   isBookmarked: boolean;
+  isFocusMode?: boolean;
   onBackToLibrary: () => void;
   onPrevPage: () => void;
   onNextPage: () => void;
@@ -39,6 +41,7 @@ interface ZenToolbarProps {
   onOpenTocModal: () => void;
   onToggleSound: () => void;
   onToggleFullscreen: () => void;
+  onToggleFocusMode?: () => void;
   onToggleSpread: () => void;
   onToggleViewerMode: () => void;
   onTogglePdfDisplayMode?: () => void;
@@ -55,6 +58,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
   settings,
   isFullscreen,
   isBookmarked,
+  isFocusMode = false,
   onBackToLibrary,
   onPrevPage,
   onNextPage,
@@ -65,6 +69,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
   onOpenTocModal,
   onToggleSound,
   onToggleFullscreen,
+  onToggleFocusMode,
   onToggleSpread,
   onToggleViewerMode,
   onTogglePdfDisplayMode,
@@ -230,6 +235,20 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
             ) : (
               <VolumeX className="w-4 h-4" />
             )}
+          </button>
+
+          {/* Focus Mode (Tập trung) */}
+          <button
+            onClick={onToggleFocusMode}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm ${
+              isFocusMode
+                ? 'bg-amber-500 text-black font-semibold'
+                : 'bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-300'
+            }`}
+            title={isFocusMode ? t.reader.exitFocusMode : t.reader.enterFocusMode}
+          >
+            <Focus className="w-4 h-4 text-amber-400" />
+            <span className="hidden md:inline">{t.reader.focusMode}</span>
           </button>
 
           {/* Fullscreen / Zen */}

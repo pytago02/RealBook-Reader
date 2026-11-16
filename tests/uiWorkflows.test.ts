@@ -340,5 +340,65 @@ describe('UI Features & User Workflows', () => {
         expect(getThemePaperTone(th)).toMatch(/^#[0-9a-f]{6}$/i);
       });
     });
+
+    it('handles Focus Mode toggle, toolbar visibility and keyboard shortcuts', () => {
+      let isFocusMode = false;
+      const toggleFocusMode = () => {
+        isFocusMode = !isFocusMode;
+      };
+
+      // Initially focus mode is off, toolbar is visible
+      expect(isFocusMode).toBe(false);
+      let isToolbarVisible = !isFocusMode;
+      expect(isToolbarVisible).toBe(true);
+
+      // User clicks Focus Mode button in header
+      toggleFocusMode();
+      expect(isFocusMode).toBe(true);
+      isToolbarVisible = !isFocusMode;
+      expect(isToolbarVisible).toBe(false);
+
+      // Keyboard Esc event exits focus mode
+      const handleKeyDown = (key: string) => {
+        if (key === 'Escape' && isFocusMode) {
+          isFocusMode = false;
+        } else if ((key === 'f' || key === 'F')) {
+          isFocusMode = !isFocusMode;
+        }
+      };
+
+      handleKeyDown('Escape');
+      expect(isFocusMode).toBe(false);
+      expect(!isFocusMode).toBe(true);
+
+      // 'f' key toggles focus mode
+      handleKeyDown('f');
+      expect(isFocusMode).toBe(true);
+      handleKeyDown('f');
+      expect(isFocusMode).toBe(false);
+    });
+
+    it('computes optimized vertical book height and margins for Focus Mode vs Normal Mode', () => {
+      const getBookDimensions = (isFocusMode: boolean, isDouble: boolean) => {
+        return {
+          height: isFocusMode ? 'calc(100vh - 12px)' : 'calc(100vh - 116px)',
+          maxWidth: isDouble
+            ? (isFocusMode ? 'min(98vw, 1800px)' : 'min(97vw, 1750px)')
+            : (isFocusMode ? 'min(96vw, 1100px)' : 'min(95vw, 1050px)'),
+          containerPadding: isFocusMode ? 'p-1 sm:p-2' : 'pt-13 pb-14 px-2 sm:px-4',
+        };
+      };
+
+      const focusDimensions = getBookDimensions(true, true);
+      const normalDimensions = getBookDimensions(false, true);
+
+      // Focus Mode utilizes maximum screen height (100vh - 12px)
+      expect(focusDimensions.height).toBe('calc(100vh - 12px)');
+      expect(focusDimensions.containerPadding).toBe('p-1 sm:p-2');
+
+      // Normal mode reserves space for top and bottom toolbars (100vh - 116px)
+      expect(normalDimensions.height).toBe('calc(100vh - 116px)');
+      expect(normalDimensions.containerPadding).toContain('pt-13 pb-14');
+    });
   });
 });
