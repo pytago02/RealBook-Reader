@@ -18,28 +18,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
       - name: Build Windows Executable
-        run: npm run build && npx electron-builder --win --x64 -c.publish=never
+        run: npm run build && npx electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare Clean Release Files
+        shell: bash
+        run: |
+          mkdir -p dist-release
+          cp "release/RealBook Reader Setup 1.0.0.exe" "dist-release/RealBook.Reader.Setup.1.0.0.exe"
+          cp "release/RealBook Reader 1.0.0.exe" "dist-release/RealBook.Reader.1.0.0.exe"
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
-          path: |
-            release/*.exe
-            !release/win-unpacked
+          path: dist-release/*.exe
 
   build-android:
     name: Build Android App (.apk)
@@ -48,10 +53,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Setup Java 17
@@ -118,11 +123,13 @@ jobs:
 
             ---
             ### ✨ Tính năng nổi bật:
-            - **Đọc sách chân thực:** Hiệu ứng lật trang 3D mượt mà, hỗ trợ dàn trang đôi / đơn như sách giấy.
-            - **Bảo vệ mắt:** 5 chế độ màu sắc (Sáng, Tối, Sepia, Giấy ngà, Rừng thông) và phông chữ Serif chuyên nghiệp.
+            - **Đọc sách chân thực:** Hiệu ứng lật trang 3D uốn lượn, hỗ trợ dàn trang đôi / đơn như sách giấy.
+            - **Chế độ tập trung (Focus Mode):** Ẩn toàn bộ thanh công cụ, tối đa hóa chiều dọc hiển thị trang sách.
+            - **Thanh công cụ ổn định:** Loại bỏ hiện tượng chớp nháy khi di chuột hoặc thao tác cuộn / lật trang.
+            - **Bảo vệ mắt:** 5 chế độ màu sắc (Sáng, Tối, Sepia, Giấy ngà, Mực điện tử) và phông chữ Serif chuyên nghiệp.
             - **Kho sách Online 70.000+ cuốn:** Tích hợp trực tiếp Project Gutenberg, Internet Archive và Open Library với kho sách tiếng Việt phong phú.
-            - **Bộ lọc & Tìm kiếm thông minh:** Tìm kiếm toàn cục hoặc tìm chính xác trong từng thể loại.
-            - **Hỗ trợ đa ngôn ngữ:** Tiếng Việt, Tiếng Anh, Tiếng Trung, Tiếng Pháp, Tiếng Tây Ban Nha, Tiếng Nhật.
+            - **Bộ lọc & Tìm kiếm thông minh 2 cấp độ:** Tìm kiếm toàn cục hoặc tìm chính xác trong từng thể loại.
+            - **Hỗ trợ đa ngôn ngữ (i18n):** Tiếng Việt, Tiếng Anh, Tiếng Trung, Tiếng Pháp, Tiếng Tây Ban Nha, Tiếng Nhật.
           files: |
             release-files/*
           draft: false
