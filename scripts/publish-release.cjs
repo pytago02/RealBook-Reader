@@ -68,6 +68,10 @@ async function main() {
     {
       localPath: path.resolve(__dirname, '../release/RealBook Reader 1.0.0.exe'),
       name: 'RealBook.Reader.1.0.0.exe'
+    },
+    {
+      localPath: path.resolve(__dirname, '../release/RealBook-Reader.apk'),
+      name: 'RealBook-Reader.apk'
     }
   ];
 

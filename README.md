@@ -63,6 +63,12 @@
 - Tự do điều chỉnh cỡ chữ (13px - 32px), dãn dòng (1.2x - 2.4x), phóng to thu nhỏ (70% - 180%).
 - Dàn trang linh hoạt: Chuyển đổi giữa chế độ **2 trang (hai trang đối xứng như sách thật)** và **1 trang đơn**.
 
+### 7. 🎯 Chế Độ Tập Trung (Focus Mode) & Tối Ưu Chiều Dọc
+- **Tối đa hóa diện tích trang sách:** Lề dọc trên dưới được tinh chỉnh tối giản, giúp chiều cao trang sách chiếm trọn vẹn màn hình.
+- **Nút tập trung chuyên biệt:** Nhấn nút **Tập trung** trên thanh công cụ hoặc bấm phím tắt `F` để ẩn toàn bộ thanh điều khiển.
+- **Thanh công cụ ổn định:** Đã loại bỏ hoàn toàn cơ chế tự ẩn/hiện chập chờn theo chuyển động của chuột, đảm bảo trải nghiệm đọc liền mạch, vững chãi khi dùng chuột cuộn dòng hoặc lật trang.
+- **Thoát tập trung tức thì:** Bấm phím `Esc` hoặc nhấp vào nút nổi tinh tế ở góc trên bên phải để quay lại giao diện đầy đủ.
+
 ---
 
 ## ⌨️ BẢNG PHÍM TẮT ĐỌC SÁCH
@@ -72,7 +78,8 @@
 | **Sang trang sau** | `Mũi tên phải` / `Page Down` / `Space` / Kéo chuột từ phải sang trái 👈 |
 | **Về trang trước** | `Mũi tên trái` / `Page Up` / `Shift + Space` / Kéo chuột từ trái sang phải 👉 |
 | **Cuộn trang** | Lăn con lăn chuột hoặc Nhấn giữ chuột kéo dọc |
-| **Toàn màn hình (Zen Mode)** | `F11` |
+| **Chế độ tập trung (Focus Mode)** | Phím `F` để bật/tắt, hoặc phím `Esc` để thoát |
+| **Toàn màn hình (Fullscreen)** | `F11` |
 | **Đánh dấu trang (Bookmark)** | Nhấn biểu tượng Bookmark trên thanh Zen |
 
 ---
