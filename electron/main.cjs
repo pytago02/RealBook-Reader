@@ -29,12 +29,7 @@ function startApp(electron) {
 
   // Set Windows App User Model ID so the Windows Taskbar associates the custom icon and grouping correctly
   if (process.platform === 'win32') {
-    if (app.isPackaged) {
-      app.setAppUserModelId('com.realbook.reader');
-    } else {
-      // In dev mode, using process.execPath allows the custom window icon to bind directly to the taskbar item
-      app.setAppUserModelId(process.execPath);
-    }
+    app.setAppUserModelId('com.realbook.reader');
   }
 
   // Dedicated data directory to prevent collisions
@@ -58,20 +53,36 @@ function startApp(electron) {
 
   function createWindow() {
     const isWin = process.platform === 'win32';
-    const iconPathIco = path.join(__dirname, '../public/icon.ico');
-    const iconPathPng = path.join(__dirname, '../public/icon.png');
-    let appIcon = null;
+    const appPath = app.getAppPath();
 
-    if (fs.existsSync(iconPathPng)) {
-      const pngImg = nativeImage.createFromPath(iconPathPng);
-      if (!pngImg.isEmpty()) {
-        appIcon = pngImg;
-      }
+    // Resolve icon paths across dev and production builds
+    const icoCandidates = [
+      path.join(__dirname, '../public/icon.ico'),
+      path.join(__dirname, '../dist/icon.ico'),
+      path.join(appPath, 'public/icon.ico'),
+      path.join(appPath, 'dist/icon.ico'),
+      path.resolve(process.cwd(), 'public/icon.ico'),
+    ];
+    const pngCandidates = [
+      path.join(__dirname, '../public/icon.png'),
+      path.join(__dirname, '../dist/icon.png'),
+      path.join(appPath, 'public/icon.png'),
+      path.join(appPath, 'dist/icon.png'),
+      path.resolve(process.cwd(), 'public/icon.png'),
+    ];
+
+    let iconPath = null;
+    if (isWin) {
+      iconPath = icoCandidates.find((p) => fs.existsSync(p)) || pngCandidates.find((p) => fs.existsSync(p));
+    } else {
+      iconPath = pngCandidates.find((p) => fs.existsSync(p)) || icoCandidates.find((p) => fs.existsSync(p));
     }
-    if (!appIcon && fs.existsSync(iconPathIco)) {
-      const icoImg = nativeImage.createFromPath(iconPathIco);
-      if (!icoImg.isEmpty()) {
-        appIcon = icoImg;
+
+    let appIcon = null;
+    if (iconPath && fs.existsSync(iconPath)) {
+      const img = nativeImage.createFromPath(iconPath);
+      if (!img.isEmpty()) {
+        appIcon = img;
       }
     }
 
@@ -82,7 +93,7 @@ function startApp(electron) {
       minHeight: 560,
       backgroundColor: '#121316',
       title: 'RealBook Reader',
-      icon: appIcon || (isWin ? iconPathIco : iconPathPng),
+      icon: iconPath || appIcon,
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: false,
@@ -92,7 +103,13 @@ function startApp(electron) {
       },
     });
 
-    if (appIcon) {
+    if (iconPath) {
+      try {
+        mainWindow.setIcon(iconPath);
+      } catch {
+        if (appIcon) mainWindow.setIcon(appIcon);
+      }
+    } else if (appIcon) {
       mainWindow.setIcon(appIcon);
     }
 

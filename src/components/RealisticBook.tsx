@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { Book, ReaderSettings } from '../types';
 import { soundService } from '../services/sound';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark } from 'lucide-react';
 
 interface RealisticBookProps {
   book: Book;
@@ -15,6 +15,7 @@ interface RealisticBookProps {
   isFocusMode?: boolean;
   onPageChange: (newPage: number) => void;
   onExtractPage?: (pageNum: number) => Promise<string>;
+  onToggleBookmark?: (page?: number) => void;
 }
 
 export const RealisticBook: React.FC<RealisticBookProps> = ({
@@ -24,10 +25,11 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   settings,
   pdfDoc,
   textPages,
-  isBookmarked,
+  isBookmarked: _isBookmarked = false,
   isFocusMode = false,
   onPageChange,
   onExtractPage,
+  onToggleBookmark,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -56,11 +58,12 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   const isDouble = settings.pageSpread === 'double';
   const isScanMode = settings.pdfDisplayMode === 'scan';
 
-  // Compute page numbers for current spread
+  // Compute page numbers for current spread:
+  // In double spread: left page is always odd (1, 3, 5, 7...) and right is even (2, 4, 6, 8...)
   const leftPageNum = isDouble
     ? currentPage % 2 === 0
-      ? currentPage
-      : Math.max(1, currentPage - 1)
+      ? currentPage - 1
+      : currentPage
     : currentPage;
   const rightPageNum = leftPageNum + 1;
 
@@ -75,7 +78,6 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   // Slide animation trigger with seamless handoff
   const executeSlide = useCallback(
     (direction: 'next' | 'prev') => {
-      const step = isDouble ? 2 : 1;
       if (direction === 'next' && currentPage >= totalPages) return;
       if (direction === 'prev' && currentPage <= 1) return;
       if (isSliding) return; // Prevent double trigger during transition
@@ -95,9 +97,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
 
         // Step 2: Commit new page and reset slide state
         if (direction === 'next') {
-          onPageChange(Math.min(totalPages, currentPage + step));
+          onPageChange(Math.min(totalPages, isDouble ? leftPageNum + 2 : currentPage + 1));
         } else {
-          onPageChange(Math.max(1, currentPage - step));
+          onPageChange(Math.max(1, isDouble ? leftPageNum - 2 : currentPage - 1));
         }
         setIsSliding(null);
         setDragOffset(0);
@@ -110,7 +112,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
         });
       }, animationDuration);
     },
-    [currentPage, totalPages, isDouble, isSliding, settings.soundEnabled, settings.soundVolume, onPageChange]
+    [currentPage, totalPages, isDouble, leftPageNum, isSliding, settings.soundEnabled, settings.soundVolume, onPageChange]
   );
 
   const turnNext = useCallback(() => executeSlide('next'), [executeSlide]);
@@ -450,18 +452,48 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
    */
   const renderSpreadView = (leftNum: number, rightNum: number, isCenter = false) => {
     if (isDouble) {
+      const isLeftBookmarked = !!book.bookmarks?.some((b) => b.page === leftNum);
+      const isRightBookmarked = !!book.bookmarks?.some((b) => b.page === rightNum);
+
       return (
-        <div className="w-full h-full flex rounded-xl overflow-hidden shadow-sm">
+        <div className="w-full h-full flex rounded-xl overflow-hidden shadow-sm relative">
           {/* LEFT PAGE */}
           <div
             key={`page-left-${leftNum}`}
             className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-r border-black/10 book-edge-stack-left ${getThemeClass()} transition-colors duration-200`}
           >
+            {/* Silk Ribbon Bookmark for Left Page */}
+            {isLeftBookmarked && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleBookmark?.(leftNum);
+                }}
+                className="absolute top-0 right-6 z-40 w-5 h-20 bg-gradient-to-b from-amber-600 via-amber-500 to-amber-700 shadow-md cursor-pointer hover:h-22 transition-all rounded-b-sm"
+                style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)' }}
+                title="Bỏ đánh dấu trang này"
+              />
+            )}
             <div className="absolute inset-y-0 right-0 w-16 book-spine-shadow-right pointer-events-none z-20" />
             {!isScanMode && (
-              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
+              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
                 <span className="truncate max-w-[200px]">{book.title}</span>
-                <span>{leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
+                <div className="flex items-center gap-1.5">
+                  {onToggleBookmark && leftNum >= 1 && leftNum <= totalPages && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleBookmark(leftNum);
+                      }}
+                      className="p-0.5 hover:text-amber-500 transition-colors"
+                      title={isLeftBookmarked ? 'Bỏ đánh dấu trang' : 'Đánh dấu trang này'}
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${isLeftBookmarked ? 'fill-amber-500 text-amber-500' : ''}`} />
+                    </button>
+                  )}
+                  <span>{leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
+                </div>
               </div>
             )}
             {renderFormattedBookPage(leftNum, isCenter)}
@@ -480,10 +512,37 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
             key={`page-right-${rightNum}`}
             className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-l border-black/10 book-edge-stack-right ${getThemeClass()} transition-colors duration-200`}
           >
+            {/* Silk Ribbon Bookmark for Right Page */}
+            {isRightBookmarked && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleBookmark?.(rightNum);
+                }}
+                className="absolute top-0 right-6 z-40 w-5 h-20 bg-gradient-to-b from-amber-600 via-amber-500 to-amber-700 shadow-md cursor-pointer hover:h-22 transition-all rounded-b-sm"
+                style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)' }}
+                title="Bỏ đánh dấu trang này"
+              />
+            )}
             <div className="absolute inset-y-0 left-0 w-16 book-spine-shadow-left pointer-events-none z-20" />
             {!isScanMode && (
-              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
-                <span>{rightNum <= totalPages && rightNum >= 1 ? rightNum : ''}</span>
+              <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
+                <div className="flex items-center gap-1.5">
+                  <span>{rightNum <= totalPages && rightNum >= 1 ? rightNum : ''}</span>
+                  {onToggleBookmark && rightNum >= 1 && rightNum <= totalPages && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleBookmark(rightNum);
+                      }}
+                      className="p-0.5 hover:text-amber-500 transition-colors"
+                      title={isRightBookmarked ? 'Bỏ đánh dấu trang' : 'Đánh dấu trang này'}
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${isRightBookmarked ? 'fill-amber-500 text-amber-500' : ''}`} />
+                    </button>
+                  )}
+                </div>
                 <span className="truncate max-w-[200px]">{book.author || ''}</span>
               </div>
             )}
@@ -499,16 +558,44 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
     }
 
     // Single page mode
+    const isSingleBookmarked = !!book.bookmarks?.some((b) => b.page === leftNum);
     return (
       <div
         key={`page-single-${leftNum}`}
         className={`w-full h-full flex flex-col ${isScanMode ? 'p-1' : 'px-5 py-2.5 sm:px-8 sm:py-3 md:px-10 md:py-3.5'} rounded-2xl shadow-sm border border-black/10 relative ${getThemeClass()} transition-colors duration-200`}
       >
+        {/* Silk Ribbon Bookmark for Single Page */}
+        {isSingleBookmarked && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark?.(leftNum);
+            }}
+            className="absolute top-0 right-8 z-40 w-5 h-20 bg-gradient-to-b from-amber-600 via-amber-500 to-amber-700 shadow-md cursor-pointer hover:h-22 transition-all rounded-b-sm"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)' }}
+            title="Bỏ đánh dấu trang này"
+          />
+        )}
         <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/20 to-transparent pointer-events-none rounded-l-2xl" />
         {!isScanMode && (
-          <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5">
+          <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
             <span className="truncate max-w-[250px]">{book.title}</span>
-            <span>Trang {leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
+            <div className="flex items-center gap-1.5">
+              {onToggleBookmark && leftNum >= 1 && leftNum <= totalPages && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleBookmark(leftNum);
+                  }}
+                  className="p-0.5 hover:text-amber-500 transition-colors"
+                  title={isSingleBookmarked ? 'Bỏ đánh dấu trang' : 'Đánh dấu trang này'}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${isSingleBookmarked ? 'fill-amber-500 text-amber-500' : ''}`} />
+                </button>
+              )}
+              <span>Trang {leftNum <= totalPages && leftNum >= 1 ? leftNum : ''}</span>
+            </div>
           </div>
         )}
         {renderFormattedBookPage(leftNum, isCenter)}
@@ -670,16 +757,6 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           height: isFocusMode ? 'calc(100vh - 12px)' : 'calc(100vh - 116px)',
         }}
       >
-        {/* Silk Ribbon Bookmark */}
-        {isBookmarked && (
-          <div
-            className="absolute top-0 right-14 z-40 w-5 h-28 bg-gradient-to-b from-amber-600 via-amber-500 to-amber-700 shadow-xl ribbon-bookmark rounded-b-sm pointer-events-none"
-            style={{
-              clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)',
-            }}
-          />
-        )}
-
         {/* 3-SLIDE HORIZONTAL CAROUSEL TRACK */}
         <div
           className="w-full h-full flex"

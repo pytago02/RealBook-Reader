@@ -80,14 +80,16 @@ async function generateIcons(electron) {
     fs.writeFileSync(path.join(assetsDir, 'icon.png'), png512);
     fs.writeFileSync(path.join(mobileIconsDir, 'icon-512.png'), png512);
 
-    // Generate standard icon sizes for Windows & Mobile: 256, 192, 128, 96, 64, 48, 32, 16
+    // Generate standard icon sizes for Windows & Mobile: 256, 192, 144, 128, 96, 72, 64, 48, 32, 16
     const sizes = [256, 192, 144, 128, 96, 72, 64, 48, 32, 16];
     const pngBuffers = { 512: png512 };
+    const bitmapBuffers = {};
 
     for (const size of sizes) {
       const resized = image.resize({ width: size, height: size, quality: 'best' });
       const buf = resized.toPNG();
       pngBuffers[size] = buf;
+      bitmapBuffers[size] = resized.toBitmap();
       fs.writeFileSync(path.join(mobileIconsDir, `icon-${size}.png`), buf);
       if (size === 256 || size === 192 || size === 128) {
         fs.writeFileSync(path.join(publicDir, `icon-${size}.png`), buf);
@@ -95,13 +97,58 @@ async function generateIcons(electron) {
     }
 
     // Generate Windows ICO file containing multiple sizes (16, 32, 48, 64, 128, 256)
+    // Uses standard DIB bitmaps for <= 128 to ensure 100% compatibility with Windows GDI, Taskbar and Explorer
     const icoSizes = [256, 128, 64, 48, 32, 16];
-    const icoBuffer = createIco(icoSizes.map((s) => ({ size: s, data: pngBuffers[s] })));
+    const icoBuffer = createStandardIco(icoSizes.map((s) => ({
+      size: s,
+      png: pngBuffers[s],
+      bitmap: bitmapBuffers[s],
+    })));
     fs.writeFileSync(path.join(publicDir, 'icon.ico'), icoBuffer);
     fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoBuffer);
     fs.writeFileSync(path.join(mobileIconsDir, 'icon.ico'), icoBuffer);
 
-    console.log('SUCCESS: All app icon assets generated (PNGs & ICO)!');
+    // Update Android mipmap icons
+    const androidResDir = path.resolve(__dirname, '../android/app/src/main/res');
+    if (fs.existsSync(androidResDir)) {
+      const mipmapMap = {
+        'mipmap-mdpi': 48,
+        'mipmap-hdpi': 72,
+        'mipmap-xhdpi': 96,
+        'mipmap-xxhdpi': 144,
+        'mipmap-xxxhdpi': 192,
+      };
+
+      for (const [folder, size] of Object.entries(mipmapMap)) {
+        const targetDir = path.join(androidResDir, folder);
+        if (fs.existsSync(targetDir)) {
+          const buf = pngBuffers[size];
+          if (buf) {
+            fs.writeFileSync(path.join(targetDir, 'ic_launcher.png'), buf);
+            fs.writeFileSync(path.join(targetDir, 'ic_launcher_round.png'), buf);
+            fs.writeFileSync(path.join(targetDir, 'ic_launcher_foreground.png'), buf);
+          }
+        }
+      }
+
+      // Update background color for Android adaptive icon to match brand background
+      const bgColorFile = path.join(androidResDir, 'values/ic_launcher_background.xml');
+      if (fs.existsSync(bgColorFile)) {
+        fs.writeFileSync(bgColorFile, `<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#141824</color>\n</resources>\n`);
+      }
+
+      // Remove conflicting obsolete default vector foregrounds if present so Android loads mipmap icons
+      const obsoleteV24 = path.join(androidResDir, 'drawable-v24/ic_launcher_foreground.xml');
+      if (fs.existsSync(obsoleteV24)) {
+        try { fs.unlinkSync(obsoleteV24); } catch {}
+      }
+      const obsoleteBg = path.join(androidResDir, 'drawable/ic_launcher_background.xml');
+      if (fs.existsSync(obsoleteBg)) {
+        try { fs.unlinkSync(obsoleteBg); } catch {}
+      }
+    }
+
+    console.log('SUCCESS: All app icon assets generated (PNGs, standard DIB ICO & Android mipmaps)!');
   } catch (err) {
     console.error('Error generating icons:', err);
   } finally {
@@ -109,38 +156,71 @@ async function generateIcons(electron) {
   }
 }
 
-// Minimal standard ICO generator from PNG buffers
-function createIco(images) {
-  const count = images.length;
-  // Header: 6 bytes (2 reserved, 2 type [1=ICO], 2 count)
+// Full standard Windows ICO generator with DIB (BMP) for <= 128px and PNG for 256px
+function createStandardIco(entries) {
+  const count = entries.length;
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0); // Reserved
-  header.writeUInt16LE(1, 2); // 1 = ICO
-  header.writeUInt16LE(count, 4);
+  header.writeUInt16LE(1, 2); // Type 1 = ICO
+  header.writeUInt16LE(count, 4); // Count
 
-  // Each directory entry: 16 bytes
   const dirSize = 16;
-  const entries = Buffer.alloc(count * dirSize);
+  const dirBuf = Buffer.alloc(count * dirSize);
   let currentOffset = 6 + count * dirSize;
-
-  const dataBuffers = [];
+  const imageBuffers = [];
 
   for (let i = 0; i < count; i++) {
-    const { size, data } = images[i];
-    const offset = i * dirSize;
+    const item = entries[i];
+    const { size } = item;
+    let data;
 
-    entries.writeUInt8(size >= 256 ? 0 : size, offset); // Width (0 means 256)
-    entries.writeUInt8(size >= 256 ? 0 : size, offset + 1); // Height (0 means 256)
-    entries.writeUInt8(0, offset + 2); // Color palette
-    entries.writeUInt8(0, offset + 3); // Reserved
-    entries.writeUInt16LE(1, offset + 4); // Color planes
-    entries.writeUInt16LE(32, offset + 6); // Bits per pixel
-    entries.writeUInt32LE(data.length, offset + 8); // Image size in bytes
-    entries.writeUInt32LE(currentOffset, offset + 12); // Offset to image data
+    if (size >= 256 || !item.bitmap) {
+      data = item.png;
+    } else {
+      // 40-byte BITMAPINFOHEADER
+      const bih = Buffer.alloc(40);
+      bih.writeUInt32LE(40, 0); // biSize
+      bih.writeInt32LE(size, 4); // biWidth
+      bih.writeInt32LE(size * 2, 8); // biHeight (doubled for XOR + AND masks)
+      bih.writeUInt16LE(1, 12); // biPlanes
+      bih.writeUInt16LE(32, 14); // biBitCount (32-bit BGRA)
+      bih.writeUInt32LE(0, 16); // biCompression (BI_RGB)
+      const xorSize = size * size * 4;
+      const andRowBytes = Math.floor((size + 31) / 32) * 4;
+      const andSize = andRowBytes * size;
+      bih.writeUInt32LE(xorSize + andSize, 20); // biSizeImage
+      bih.writeInt32LE(0, 24); // biXPelsPerMeter
+      bih.writeInt32LE(0, 28); // biYPelsPerMeter
+      bih.writeUInt32LE(0, 32); // biClrUsed
+      bih.writeUInt32LE(0, 36); // biClrImportant
+
+      // DIB scanlines are bottom-to-top
+      const xorMask = Buffer.alloc(xorSize);
+      const rowSize = size * 4;
+      for (let y = 0; y < size; y++) {
+        const srcY = size - 1 - y;
+        item.bitmap.copy(xorMask, y * rowSize, srcY * rowSize, (srcY + 1) * rowSize);
+      }
+
+      // AND mask (all zeros for 32-bit alpha icon)
+      const andMask = Buffer.alloc(andSize, 0);
+
+      data = Buffer.concat([bih, xorMask, andMask]);
+    }
+
+    const dirOffset = i * dirSize;
+    dirBuf.writeUInt8(size >= 256 ? 0 : size, dirOffset);
+    dirBuf.writeUInt8(size >= 256 ? 0 : size, dirOffset + 1);
+    dirBuf.writeUInt8(0, dirOffset + 2); // Colors in palette
+    dirBuf.writeUInt8(0, dirOffset + 3); // Reserved
+    dirBuf.writeUInt16LE(1, dirOffset + 4); // Color planes
+    dirBuf.writeUInt16LE(32, dirOffset + 6); // Bits per pixel
+    dirBuf.writeUInt32LE(data.length, dirOffset + 8); // Image size
+    dirBuf.writeUInt32LE(currentOffset, dirOffset + 12); // Offset to image data
 
     currentOffset += data.length;
-    dataBuffers.push(data);
+    imageBuffers.push(data);
   }
 
-  return Buffer.concat([header, entries, ...dataBuffers]);
+  return Buffer.concat([header, dirBuf, ...imageBuffers]);
 }

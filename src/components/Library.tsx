@@ -993,14 +993,32 @@ export const Library: React.FC<LibraryProps> = ({
 
                         {/* Bottom action row */}
                         <div className="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between">
-                          <span className="text-[11px] text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(book.lastReadAt).toLocaleDateString(
-                              currentLanguage === "vi" ? "vi-VN" : "en-US",
-                            )}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 truncate max-w-[65%]">
+                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {new Date(book.lastReadAt).toLocaleDateString(
+                                currentLanguage === "vi" ? "vi-VN" : "en-US",
+                              )}
+                            </span>
+                            {book.readingTimeSeconds && book.readingTimeSeconds >= 60 ? (
+                              <span className="text-amber-500/80 flex-shrink-0 font-mono">
+                                • {Math.round(book.readingTimeSeconds / 60)}{" "}
+                                {currentLanguage === "vi" ? "phút" : "mins"}
+                              </span>
+                            ) : null}
+                          </div>
 
                           <div className="flex items-center gap-1">
+                            {/* Bookmark indicator badge */}
+                            {book.bookmarks && book.bookmarks.length > 0 && (
+                              <span
+                                className="text-[10px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                                title={`${book.bookmarks.length} ${currentLanguage === "vi" ? "dấu trang" : "bookmarks"}`}
+                              >
+                                <Bookmark className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                                <span>{book.bookmarks.length}</span>
+                              </span>
+                            )}
                             {/* Genre Changer Dropdown */}
                             <div className="relative">
                               <button

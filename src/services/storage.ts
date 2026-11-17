@@ -70,6 +70,17 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
 };
 
 export class StorageService {
+  private metaQueue: Promise<unknown> = Promise.resolve();
+
+  /**
+   * Run metadata read-modify-write tasks sequentially to avoid concurrency race conditions
+   */
+  private async runWithMetaLock<T>(task: () => Promise<T>): Promise<T> {
+    const next = this.metaQueue.then(task, task);
+    this.metaQueue = next;
+    return next;
+  }
+
   /**
    * Get all books in the library
    */
@@ -93,14 +104,16 @@ export class StorageService {
    * Save or update book metadata
    */
   async saveBookMeta(book: Book): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const index = books.findIndex((b) => b.id === book.id);
-    if (index >= 0) {
-      books[index] = book;
-    } else {
-      books.unshift(book);
-    }
-    await safeSet(BOOKS_META_KEY, books);
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      const index = books.findIndex((b) => b.id === book.id);
+      if (index >= 0) {
+        books[index] = book;
+      } else {
+        books.unshift(book);
+      }
+      await safeSet(BOOKS_META_KEY, books);
+    });
   }
 
   /**
@@ -127,65 +140,106 @@ export class StorageService {
   }
 
   /**
-   * Update reading progress
+   * Update reading progress and reading duration
    */
-  async updateProgress(id: string, page: number, totalPages?: number): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const book = books.find((b) => b.id === id);
-    if (book) {
-      book.currentPage = page;
-      if (totalPages) book.totalPages = totalPages;
-      book.lastReadAt = Date.now();
-      await safeSet(BOOKS_META_KEY, books);
-    }
+  async updateProgress(
+    id: string,
+    page: number,
+    totalPages?: number,
+    addedTimeSeconds = 0
+  ): Promise<void> {
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      let book = books.find((b) => b.id === id);
+      if (!book && id === 'sample-hoang-tu-be') {
+        book = this.createSampleBook();
+        books.push(book);
+      }
+      if (book) {
+        book.currentPage = page;
+        if (totalPages) book.totalPages = totalPages;
+        book.lastReadAt = Date.now();
+        if (addedTimeSeconds > 0) {
+          book.readingTimeSeconds = (book.readingTimeSeconds || 0) + addedTimeSeconds;
+        }
+        await safeSet(BOOKS_META_KEY, books);
+      }
+    });
   }
 
   /**
    * Add bookmark to book
    */
   async addBookmark(bookId: string, bookmark: Bookmark): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const book = books.find((b) => b.id === bookId);
-    if (book) {
-      if (!book.bookmarks) book.bookmarks = [];
-      book.bookmarks.push(bookmark);
-      await safeSet(BOOKS_META_KEY, books);
-    }
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      let book = books.find((b) => b.id === bookId);
+      if (!book && bookId === 'sample-hoang-tu-be') {
+        book = this.createSampleBook();
+        books.push(book);
+      }
+      if (book) {
+        if (!book.bookmarks) book.bookmarks = [];
+        const idx = book.bookmarks.findIndex((b) => b.page === bookmark.page);
+        if (idx >= 0) {
+          book.bookmarks[idx] = bookmark;
+        } else {
+          book.bookmarks.push(bookmark);
+        }
+        await safeSet(BOOKS_META_KEY, books);
+      }
+    });
   }
 
   /**
-   * Remove bookmark
+   * Remove bookmark by ID or by Page
    */
-  async removeBookmark(bookId: string, bookmarkId: string): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const book = books.find((b) => b.id === bookId);
-    if (book && book.bookmarks) {
-      book.bookmarks = book.bookmarks.filter((b) => b.id !== bookmarkId);
-      await safeSet(BOOKS_META_KEY, books);
-    }
+  async removeBookmark(bookId: string, bookmarkIdOrPage: string | number): Promise<void> {
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      let book = books.find((b) => b.id === bookId);
+      if (!book && bookId === 'sample-hoang-tu-be') {
+        book = this.createSampleBook();
+        books.push(book);
+      }
+      if (book && book.bookmarks) {
+        book.bookmarks = book.bookmarks.filter(
+          (b) => b.id !== bookmarkIdOrPage && b.page !== bookmarkIdOrPage
+        );
+        await safeSet(BOOKS_META_KEY, books);
+      }
+    });
   }
 
   /**
    * Add or update highlight
    */
   async addHighlight(bookId: string, highlight: Highlight): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const book = books.find((b) => b.id === bookId);
-    if (book) {
-      if (!book.highlights) book.highlights = [];
-      book.highlights.push(highlight);
-      await safeSet(BOOKS_META_KEY, books);
-    }
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      let book = books.find((b) => b.id === bookId);
+      if (!book && bookId === 'sample-hoang-tu-be') {
+        book = this.createSampleBook();
+        books.push(book);
+      }
+      if (book) {
+        if (!book.highlights) book.highlights = [];
+        book.highlights.push(highlight);
+        await safeSet(BOOKS_META_KEY, books);
+      }
+    });
   }
 
   /**
    * Delete book and its file
    */
   async deleteBook(id: string): Promise<void> {
-    const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
-    const filtered = books.filter((b) => b.id !== id);
-    await safeSet(BOOKS_META_KEY, filtered);
-    await safeDel(`${BOOK_DATA_PREFIX}${id}`);
+    return this.runWithMetaLock(async () => {
+      const books = (await safeGet<Book[]>(BOOKS_META_KEY)) || [];
+      const filtered = books.filter((b) => b.id !== id);
+      await safeSet(BOOKS_META_KEY, filtered);
+      await safeDel(`${BOOK_DATA_PREFIX}${id}`);
+    });
   }
 
   /**

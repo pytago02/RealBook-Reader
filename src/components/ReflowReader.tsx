@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ReaderSettings, Book } from '../types';
+import { Bookmark } from 'lucide-react';
 
 interface ReflowReaderProps {
   book: Book;
@@ -7,8 +8,10 @@ interface ReflowReaderProps {
   totalPages: number;
   textPages: string[];
   settings: ReaderSettings;
+  isBookmarked?: boolean;
   isFocusMode?: boolean;
   onPageChange: (newPage: number) => void;
+  onToggleBookmark?: (page?: number) => void;
 }
 
 export const ReflowReader: React.FC<ReflowReaderProps> = ({
@@ -17,8 +20,10 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
   totalPages,
   textPages,
   settings,
+  isBookmarked = false,
   isFocusMode = false,
   onPageChange,
+  onToggleBookmark,
 }) => {
   const typo = settings.typography;
 
@@ -57,18 +62,42 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
 
   return (
     <div
-      className={`w-full h-full flex flex-col items-center overflow-y-auto ${getThemeClass()} transition-colors duration-300 ${
+      className={`relative w-full h-full flex flex-col items-center overflow-y-auto ${getThemeClass()} transition-colors duration-300 ${
         isFocusMode ? 'py-4 px-4 sm:px-6' : 'pt-16 pb-20 px-4 sm:px-6'
       }`}
       style={{
         filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`,
       }}
     >
+      {/* Silk Ribbon Bookmark on top edge of reflow container */}
+      {isBookmarked && (
+        <div
+          onClick={() => onToggleBookmark?.(currentPage)}
+          className="fixed top-0 right-10 md:right-24 z-30 w-5 h-20 bg-gradient-to-b from-amber-600 via-amber-500 to-amber-700 shadow-md cursor-pointer hover:h-22 transition-all rounded-b-sm"
+          style={{
+            clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)',
+          }}
+          title="Bỏ đánh dấu trang này"
+        />
+      )}
+
       <article className={`w-full ${getMarginClass()} my-auto`}>
         {/* Book Header / Chapter Meta */}
-        <div className="mb-4 pb-2 border-b border-current/10 flex justify-between items-center text-xs opacity-50 font-mono">
-          <span className="font-semibold uppercase tracking-wider truncate max-w-[70%]">{book.title}</span>
-          <span>Trang {currentPage} / {totalPages}</span>
+        <div className="mb-4 pb-2 border-b border-current/10 flex justify-between items-center text-xs opacity-60 font-mono">
+          <span className="font-semibold uppercase tracking-wider truncate max-w-[65%]">{book.title}</span>
+          <div className="flex items-center gap-2">
+            <span>Trang {currentPage} / {totalPages}</span>
+            {onToggleBookmark && (
+              <button
+                type="button"
+                onClick={() => onToggleBookmark(currentPage)}
+                className="p-1 hover:text-amber-500 transition-colors"
+                title={isBookmarked ? 'Bỏ đánh dấu trang' : 'Đánh dấu trang này'}
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-amber-500 text-amber-500' : ''}`} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Text Content with Custom Typography */}

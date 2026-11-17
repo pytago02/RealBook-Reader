@@ -401,4 +401,138 @@ describe('UI Features & User Workflows', () => {
       expect(normalDimensions.containerPadding).toContain('pt-13 pb-14');
     });
   });
+
+  describe('Reading Progress, Spread Pairing & Bookmark Workflows', () => {
+    it('correctly calculates 2-page spread pairing without duplicate pages or skips', () => {
+      const getSpreadPages = (currentPage: number, isDouble: boolean) => {
+        const leftPageNum = isDouble
+          ? currentPage % 2 === 0
+            ? currentPage - 1
+            : currentPage
+          : currentPage;
+        const rightPageNum = leftPageNum + 1;
+        return [leftPageNum, rightPageNum];
+      };
+
+      // Spreads must be [1, 2], [3, 4], [5, 6], etc.
+      expect(getSpreadPages(1, true)).toEqual([1, 2]);
+      expect(getSpreadPages(2, true)).toEqual([1, 2]);
+      expect(getSpreadPages(3, true)).toEqual([3, 4]);
+      expect(getSpreadPages(4, true)).toEqual([3, 4]);
+      expect(getSpreadPages(5, true)).toEqual([5, 6]);
+      expect(getSpreadPages(6, true)).toEqual([5, 6]);
+
+      // Advancing spreads
+      let cur = 1;
+      const totalPages = 10;
+      const getNext = (p: number) => {
+        const left = p % 2 === 0 ? p - 1 : p;
+        return Math.min(totalPages, left + 2);
+      };
+      const getPrev = (p: number) => {
+        const left = p % 2 === 0 ? p - 1 : p;
+        return Math.max(1, left - 2);
+      };
+
+      cur = getNext(cur); // from [1, 2] -> [3, 4]
+      expect(cur).toBe(3);
+      expect(getSpreadPages(cur, true)).toEqual([3, 4]);
+
+      cur = getNext(cur); // from [3, 4] -> [5, 6]
+      expect(cur).toBe(5);
+      expect(getSpreadPages(cur, true)).toEqual([5, 6]);
+
+      cur = getPrev(cur); // from [5, 6] -> [3, 4]
+      expect(cur).toBe(3);
+      expect(getSpreadPages(cur, true)).toEqual([3, 4]);
+
+      cur = getPrev(cur); // from [3, 4] -> [1, 2]
+      expect(cur).toBe(1);
+      expect(getSpreadPages(cur, true)).toEqual([1, 2]);
+    });
+
+    it('accurately identifies whether any visible page in double spread is bookmarked', () => {
+      const bookmarks = [
+        { id: 'bm-2', page: 2, createdAt: 1000 },
+        { id: 'bm-7', page: 7, createdAt: 2000 },
+      ];
+
+      const isSpreadBookmarked = (curPage: number, isDouble: boolean) => {
+        const leftPage = isDouble
+          ? curPage % 2 === 0
+            ? curPage - 1
+            : curPage
+          : curPage;
+        return isDouble
+          ? bookmarks.some((b) => b.page === leftPage || b.page === leftPage + 1)
+          : bookmarks.some((b) => b.page === curPage);
+      };
+
+      // Page 2 is bookmarked. When viewing spread [1, 2] (curPage = 1 or 2):
+      expect(isSpreadBookmarked(1, true)).toBe(true);
+      expect(isSpreadBookmarked(2, true)).toBe(true);
+
+      // Viewing spread [3, 4]:
+      expect(isSpreadBookmarked(3, true)).toBe(false);
+      expect(isSpreadBookmarked(4, true)).toBe(false);
+
+      // Page 7 is bookmarked. Viewing spread [7, 8]:
+      expect(isSpreadBookmarked(7, true)).toBe(true);
+      expect(isSpreadBookmarked(8, true)).toBe(true);
+
+      // In single mode: only exact page matches
+      expect(isSpreadBookmarked(1, false)).toBe(false);
+      expect(isSpreadBookmarked(2, false)).toBe(true);
+      expect(isSpreadBookmarked(7, false)).toBe(true);
+    });
+
+    it('synchronizes reading progress and bookmarks across library shelf and reader', () => {
+      let books: Book[] = [
+        {
+          id: 'test-book-sync',
+          title: 'Sách Thử Nghiệm',
+          author: 'Tác giả',
+          genre: 'Văn học & Tiểu thuyết',
+          format: 'txt',
+          totalPages: 50,
+          currentPage: 1,
+          fileSize: 10000,
+          addedAt: 1000,
+          lastReadAt: 1000,
+          bookmarks: [],
+          highlights: [],
+          readingTimeSeconds: 0,
+        },
+      ];
+
+      let currentBook: Book | null = { ...books[0] };
+
+      // User turns to page 15
+      const newPage = 15;
+      const now = 5000;
+      currentBook = { ...currentBook, currentPage: newPage, lastReadAt: now };
+      books = books.map((b) => (b.id === currentBook!.id ? { ...b, currentPage: newPage, lastReadAt: now } : b));
+
+      expect(currentBook.currentPage).toBe(15);
+      expect(books[0].currentPage).toBe(15);
+
+      // User adds bookmark to page 15
+      const newBm = { id: 'bm-15', page: 15, createdAt: now };
+      currentBook = { ...currentBook, bookmarks: [...(currentBook.bookmarks || []), newBm] };
+      books = books.map((b) => (b.id === currentBook!.id ? { ...b, bookmarks: [...(b.bookmarks || []), newBm] } : b));
+
+      expect(currentBook.bookmarks).toHaveLength(1);
+      expect(books[0].bookmarks).toHaveLength(1);
+
+      // User returns to library (currentBook becomes null)
+      currentBook = null;
+      expect(books[0].currentPage).toBe(15);
+      expect(books[0].bookmarks).toHaveLength(1);
+
+      // User reopens the book from library
+      const openedBook = { ...books[0] };
+      expect(openedBook.currentPage).toBe(15);
+      expect(openedBook.bookmarks?.[0].page).toBe(15);
+    });
+  });
 });

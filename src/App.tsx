@@ -131,12 +131,52 @@ export const App: React.FC = () => {
     }
   };
 
+  // Active reading timer: track reading duration every 10s when tab is active
+  useEffect(() => {
+    if (!currentBook) return;
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      const addSeconds = 10;
+      setCurrentBook((prev) =>
+        prev
+          ? {
+              ...prev,
+              readingTimeSeconds: (prev.readingTimeSeconds || 0) + addSeconds,
+            }
+          : null
+      );
+      setBooks((prev) =>
+        prev.map((b) =>
+          b.id === currentBook.id
+            ? { ...b, readingTimeSeconds: (b.readingTimeSeconds || 0) + addSeconds }
+            : b
+        )
+      );
+      storageService.updateProgress(
+        currentBook.id,
+        currentBook.currentPage,
+        currentBook.totalPages,
+        addSeconds
+      );
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [currentBook?.id, currentBook?.currentPage, currentBook?.totalPages]);
+
   // Open a book
   const handleOpenBook = async (book: Book, preloadedDoc?: pdfjsLib.PDFDocumentProxy) => {
     setIsLoading(true);
     setLoadingText('Đang nạp dữ liệu sách...');
     setIsFocusMode(false);
-    setCurrentBook(book);
+
+    // Fetch freshest book data from storage to guarantee latest progress and bookmarks
+    const freshBooks = await storageService.getBooks();
+    const freshBook = freshBooks.find((b) => b.id === book.id) || book;
+    const now = Date.now();
+    const activeBook: Book = { ...freshBook, lastReadAt: now };
+    setCurrentBook(activeBook);
+    setBooks(freshBooks.map((b) => (b.id === activeBook.id ? activeBook : b)));
 
     // Failsafe timer: loading overlay will NEVER spin longer than 4.5 seconds under any circumstance
     const failsafeTimer = window.setTimeout(() => {
@@ -405,37 +445,58 @@ export const App: React.FC = () => {
     }
   };
 
-  // Page change
+  // Page change: updates current book, syncs books array, and persists progress
   const handlePageChange = (newPage: number) => {
     if (!currentBook) return;
     const clamped = Math.max(1, Math.min(newPage, currentBook.totalPages));
-    setCurrentBook((prev) => (prev ? { ...prev, currentPage: clamped } : null));
+    const now = Date.now();
+    setCurrentBook((prev) => (prev ? { ...prev, currentPage: clamped, lastReadAt: now } : null));
+    setBooks((prevBooks) =>
+      prevBooks.map((b) =>
+        b.id === currentBook.id ? { ...b, currentPage: clamped, lastReadAt: now } : b
+      )
+    );
     storageService.updateProgress(currentBook.id, clamped, currentBook.totalPages);
   };
 
-  // Bookmark toggle
-  const handleToggleBookmark = () => {
+  // Bookmark toggle: supports explicit targetPage or current visible spread
+  const handleToggleBookmark = (targetPage?: number) => {
     if (!currentBook) return;
-    const curPage = currentBook.currentPage;
-    const existing = currentBook.bookmarks?.find((b) => b.page === curPage);
+    const curPage =
+      targetPage !== undefined
+        ? targetPage
+        : currentBook.currentPage;
+    const existing = (currentBook.bookmarks || []).find((b) => b.page === curPage);
 
     if (existing) {
       storageService.removeBookmark(currentBook.id, existing.id);
-      setCurrentBook({
-        ...currentBook,
-        bookmarks: currentBook.bookmarks.filter((b) => b.id !== existing.id),
+      const updatedBookmarks = (currentBook.bookmarks || []).filter((b) => b.id !== existing.id);
+      setCurrentBook((prev) => (prev ? { ...prev, bookmarks: updatedBookmarks } : null));
+      setBooks((prevBooks) =>
+        prevBooks.map((b) => (b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b))
+      );
+      showToast({
+        type: 'info',
+        title: 'Dấu trang',
+        message: `Đã bỏ đánh dấu trang ${curPage}.`,
       });
     } else {
       const newBm = {
-        id: `bm-${Date.now()}`,
+        id: `bm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         page: curPage,
         label: `Trang ${curPage}`,
         createdAt: Date.now(),
       };
       storageService.addBookmark(currentBook.id, newBm);
-      setCurrentBook({
-        ...currentBook,
-        bookmarks: [...(currentBook.bookmarks || []), newBm],
+      const updatedBookmarks = [...(currentBook.bookmarks || []), newBm];
+      setCurrentBook((prev) => (prev ? { ...prev, bookmarks: updatedBookmarks } : null));
+      setBooks((prevBooks) =>
+        prevBooks.map((b) => (b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b))
+      );
+      showToast({
+        type: 'success',
+        title: 'Dấu trang',
+        message: `Đã đánh dấu trang ${curPage}.`,
       });
     }
   };
@@ -483,17 +544,40 @@ export const App: React.FC = () => {
     storageService.saveSettings(updated);
   };
 
-  // Back to Library
-  const handleBackToLibrary = () => {
+  // Back to Library: flushes progress, re-fetches latest library state
+  const handleBackToLibrary = async () => {
     setIsFocusMode(false);
+    if (currentBook) {
+      await storageService.updateProgress(
+        currentBook.id,
+        currentBook.currentPage,
+        currentBook.totalPages
+      );
+      const refreshedBooks = await storageService.getBooks();
+      setBooks(refreshedBooks);
+    }
     setCurrentBook(null);
     setPdfDoc(null);
     setTextPages(null);
     setToc([]);
   };
 
+  const isDoubleSpread = settings.pageSpread === 'double';
+  const spreadLeftPage = currentBook
+    ? isDoubleSpread
+      ? currentBook.currentPage % 2 === 0
+        ? currentBook.currentPage - 1
+        : currentBook.currentPage
+      : currentBook.currentPage
+    : 1;
+
+  // Bookmarked status for toolbar: true if any visible page in the current spread is bookmarked
   const isCurrentPageBookmarked =
-    !!currentBook?.bookmarks?.some((b) => b.page === currentBook.currentPage);
+    !!currentBook?.bookmarks?.some(
+      (b) =>
+        b.page === spreadLeftPage ||
+        (isDoubleSpread && b.page === spreadLeftPage + 1)
+    );
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#121316] text-[#e2e2e8]">
@@ -548,8 +632,18 @@ export const App: React.FC = () => {
             isFullscreen={isFullscreen}
             isBookmarked={isCurrentPageBookmarked}
             onBackToLibrary={handleBackToLibrary}
-            onPrevPage={() => handlePageChange(currentBook.currentPage - (settings.pageSpread === 'double' ? 2 : 1))}
-            onNextPage={() => handlePageChange(currentBook.currentPage + (settings.pageSpread === 'double' ? 2 : 1))}
+            onPrevPage={() =>
+              handlePageChange(
+                isDoubleSpread ? Math.max(1, spreadLeftPage - 2) : currentBook.currentPage - 1
+              )
+            }
+            onNextPage={() =>
+              handlePageChange(
+                isDoubleSpread
+                  ? Math.min(currentBook.totalPages, spreadLeftPage + 2)
+                  : currentBook.currentPage + 1
+              )
+            }
             onPageChange={handlePageChange}
             onToggleBookmark={handleToggleBookmark}
             onOpenThemeModal={() => setIsThemeModalOpen(true)}
@@ -599,8 +693,10 @@ export const App: React.FC = () => {
                 totalPages={currentBook.totalPages}
                 textPages={textPages}
                 settings={settings}
+                isBookmarked={isCurrentPageBookmarked}
                 isFocusMode={isFocusMode}
                 onPageChange={handlePageChange}
+                onToggleBookmark={handleToggleBookmark}
               />
             ) : (
               <RealisticBook
@@ -614,6 +710,7 @@ export const App: React.FC = () => {
                 isFocusMode={isFocusMode}
                 onPageChange={handlePageChange}
                 onExtractPage={handleExtractPage}
+                onToggleBookmark={handleToggleBookmark}
               />
             )}
           </div>
@@ -643,13 +740,14 @@ export const App: React.FC = () => {
             onSelectPage={handlePageChange}
             onDeleteBookmark={(bmId) => {
               storageService.removeBookmark(currentBook.id, bmId);
+              const updatedBookmarks = (currentBook.bookmarks || []).filter((b) => b.id !== bmId);
               setCurrentBook((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      bookmarks: (prev.bookmarks || []).filter((b) => b.id !== bmId),
-                    }
-                  : null
+                prev ? { ...prev, bookmarks: updatedBookmarks } : null
+              );
+              setBooks((prevBooks) =>
+                prevBooks.map((b) =>
+                  b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b
+                )
               );
             }}
           />
