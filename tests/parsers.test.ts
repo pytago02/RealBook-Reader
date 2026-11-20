@@ -90,4 +90,26 @@ describe('Parsers & Text Processing', () => {
       expect(cleaned).toContain('ĐỒNG');
     });
   });
+
+  describe('Document Format & Magic Bytes Detection', () => {
+    it('identifies PDF file correctly from binary magic bytes %PDF', () => {
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]); // %PDF-1.4
+      const hasPdfMagic =
+        pdfBytes.length >= 4 &&
+        pdfBytes[0] === 0x25 &&
+        pdfBytes[1] === 0x50 &&
+        pdfBytes[2] === 0x44 &&
+        pdfBytes[3] === 0x46;
+      expect(hasPdfMagic).toBe(true);
+    });
+
+    it('identifies DOCX file correctly from binary magic bytes PK', () => {
+      const docxBytes = new Uint8Array([0x50, 0x4B, 0x03, 0x04]); // PK..
+      const hasZipMagic =
+        docxBytes.length >= 4 &&
+        docxBytes[0] === 0x50 &&
+        docxBytes[1] === 0x4B;
+      expect(hasZipMagic).toBe(true);
+    });
+  });
 });

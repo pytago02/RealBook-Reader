@@ -173,7 +173,10 @@ export const Library: React.FC<LibraryProps> = ({
   // File input change
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      onImportFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Reset input value so selecting the exact same file again will always trigger onChange
+      e.target.value = '';
+      onImportFile(file);
     }
   };
 
@@ -720,7 +723,7 @@ export const Library: React.FC<LibraryProps> = ({
                   type="file"
                   id="book-upload-input"
                   ref={fileInputRef}
-                  accept=".pdf,.docx,.txt,.epub,.md"
+                  accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,.txt,text/plain,.epub,application/epub+zip,.md,text/markdown"
                   onChange={handleFileInput}
                   className="hidden"
                 />

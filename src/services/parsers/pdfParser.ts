@@ -1,14 +1,15 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
+import 'pdfjs-dist/build/pdf.worker.mjs';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { TocItem } from '../../types';
 
-// Set up worker safely
+// Set up worker safely with both workerSrc and fallback to in-memory fake worker
 try {
   if (typeof window !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
   }
 } catch (err) {
-  console.warn('Worker port initialization warning:', err);
+  console.warn('Worker source initialization warning:', err);
 }
 
 /**
@@ -42,26 +43,62 @@ function cleanVietnameseDiacritics(text: string): string {
   return cleaned.normalize('NFC');
 }
 
+let isInMemoryFallbackActive = false;
+
 export class PdfParser {
   /**
-   * Load PDF Document from ArrayBuffer or Uint8Array
+   * Load PDF Document from ArrayBuffer or Uint8Array safely across Web, Electron, and Android Capacitor
    */
   async loadDocument(data: ArrayBuffer | Uint8Array): Promise<pdfjsLib.PDFDocumentProxy> {
     // Clone data to avoid detaching original buffer from caller
     const copy = data instanceof Uint8Array ? data.slice() : new Uint8Array(data.slice(0));
 
+    // If in-memory fallback was already triggered in this session, parse directly in-memory
+    if (isInMemoryFallbackActive) {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerPort = null;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      } catch {}
+      const directTask = pdfjsLib.getDocument({
+        data: copy,
+        useSystemFonts: true,
+        cMapPacked: true,
+      });
+      return await directTask.promise;
+    }
+
     try {
       const loadingTask = pdfjsLib.getDocument({
         data: copy,
         useSystemFonts: true,
+        cMapPacked: true,
       });
-      return await loadingTask.promise;
+
+      // Race with 3500ms timeout in case Web Worker hangs in Android WebView
+      return await Promise.race([
+        loadingTask.promise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => {
+            try {
+              loadingTask.destroy();
+            } catch {}
+            reject(new Error('PDF Worker initialization timeout'));
+          }, 3500)
+        ),
+      ]);
     } catch (err) {
-      console.warn('PDF load attempt 1 failed, trying fallback mode:', err);
+      console.warn('PDF load attempt 1 failed or timed out, switching to safe in-memory mode:', err);
+      isInMemoryFallbackActive = true;
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerPort = null;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      } catch {}
+
       const copy2 = data instanceof Uint8Array ? data.slice() : new Uint8Array(data.slice(0));
       const fallbackTask = pdfjsLib.getDocument({
         data: copy2,
         useSystemFonts: true,
+        cMapPacked: true,
       });
       return await fallbackTask.promise;
     }

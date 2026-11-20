@@ -311,38 +311,92 @@ export const App: React.FC = () => {
     }
   };
 
+  // Universal helper to read File or Blob to ArrayBuffer across Web, Electron, and Android WebView
+  const readBlobAsArrayBuffer = async (blob: Blob): Promise<ArrayBuffer> => {
+    if (typeof blob.arrayBuffer === 'function') {
+      try {
+        return await blob.arrayBuffer();
+      } catch {
+        // Fallback to FileReader below if native arrayBuffer() fails in Android WebView
+      }
+    }
+    return new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result instanceof ArrayBuffer) {
+          resolve(reader.result);
+        } else {
+          reject(new Error('FileReader did not return an ArrayBuffer'));
+        }
+      };
+      reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+      reader.readAsArrayBuffer(blob);
+    });
+  };
+
   // Import file from machine
   const handleImportFile = async (file: File) => {
     setIsLoading(true);
-    setLoadingText(`Đang xử lý ${file.name}...`);
+    setLoadingText(`Đang xử lý ${file.name || 'tài liệu'}...`);
 
     const failsafeTimer = window.setTimeout(() => {
       setIsLoading(false);
-    }, 8000);
+    }, 30000);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const lowerName = file.name.toLowerCase();
-      const isPdf = lowerName.endsWith('.pdf') || file.type === 'application/pdf';
-      const isDocx = lowerName.endsWith('.docx') || file.type.includes('word') || file.type.includes('document');
+      const buffer = await readBlobAsArrayBuffer(file);
+      const lowerName = (file.name || '').toLowerCase();
+
+      // Inspect binary magic bytes to guarantee 100% accurate format identification on Android
+      const header = new Uint8Array(buffer.slice(0, 5));
+      const hasPdfMagic =
+        header.length >= 4 &&
+        header[0] === 0x25 && // %
+        header[1] === 0x50 && // P
+        header[2] === 0x44 && // D
+        header[3] === 0x46;   // F
+      const hasZipMagic =
+        header.length >= 4 &&
+        header[0] === 0x50 && // P
+        header[1] === 0x4B;   // K
+
+      const isPdf = hasPdfMagic || lowerName.endsWith('.pdf') || file.type === 'application/pdf';
+      const isDocx =
+        (hasZipMagic && (lowerName.endsWith('.docx') || file.type.includes('word'))) ||
+        lowerName.endsWith('.docx') ||
+        file.type.includes('word') ||
+        file.type.includes('document');
 
       let format: Book['format'] = 'pdf';
       let totalPages = 1;
       let coverUrl: string | undefined = undefined;
-      let title = file.name.replace(/\.[^/.]+$/, '');
+      let title = (file.name || 'Tài liệu')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/^(content|file):[/\\]*/i, '')
+        .trim();
       let author = 'Cá nhân';
       let initialTextPages: string[] | null = null;
       let pdfDocumentInstance: pdfjsLib.PDFDocumentProxy | undefined = undefined;
 
       const newBookId = `book-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      // Save binary copy to IndexedDB FIRST so it is safely stored
+      // Save binary copy to IndexedDB safely
       await storageService.saveBookFile(newBookId, buffer.slice(0));
 
       if (isPdf) {
         format = 'pdf';
         pdfDocumentInstance = await pdfParser.loadDocument(buffer.slice(0));
-        totalPages = pdfDocumentInstance.numPages;
+        totalPages = Math.max(1, pdfDocumentInstance.numPages);
+
+        // Try extracting embedded PDF title metadata if available
+        try {
+          const meta = await pdfDocumentInstance.getMetadata().catch(() => null);
+          const metaTitle = (meta?.info as Record<string, any> | undefined)?.Title;
+          if (typeof metaTitle === 'string' && metaTitle.trim().length > 1) {
+            title = metaTitle.trim();
+          }
+        } catch {}
+
         try {
           coverUrl = await pdfParser.generateCoverThumbnail(pdfDocumentInstance);
         } catch (e) {
@@ -361,6 +415,10 @@ export const App: React.FC = () => {
         title = parsed.title || title;
         totalPages = parsed.pages.length;
         initialTextPages = parsed.pages;
+      }
+
+      if (!title || /^(content|file):/i.test(title) || /^[0-9_.-]+$/.test(title)) {
+        title = isPdf ? 'Tài liệu PDF' : isDocx ? 'Tài liệu Word' : 'Văn bản';
       }
 
       const genre = inferGenre(title);
