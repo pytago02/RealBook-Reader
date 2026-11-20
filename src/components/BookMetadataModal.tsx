@@ -14,7 +14,6 @@ export interface PendingBookData {
   defaultAuthor: string;
   defaultGenre: string;
   initialTextPages: string[] | null;
-  pdfDoc?: any;
 }
 
 export interface BookMetadataForm {

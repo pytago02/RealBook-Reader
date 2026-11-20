@@ -68,26 +68,39 @@ export class PdfParser {
       return await directTask.promise;
     }
 
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null;
     try {
-      const loadingTask = pdfjsLib.getDocument({
+      loadingTask = pdfjsLib.getDocument({
         data: copy,
         useSystemFonts: true,
         cMapPacked: true,
       });
 
       // Race with 3500ms timeout in case Web Worker hangs in Android WebView
-      return await Promise.race([
+      const doc = await Promise.race([
         loadingTask.promise,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => {
+        new Promise<never>((_, reject) => {
+          timerId = setTimeout(() => {
             try {
-              loadingTask.destroy();
+              loadingTask?.destroy();
             } catch {}
             reject(new Error('PDF Worker initialization timeout'));
-          }, 3500)
-        ),
+          }, 3500);
+        }),
       ]);
+
+      // CRITICAL: Clear the timeout immediately so loadingTask is NOT destroyed in the background!
+      if (timerId !== null) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      return doc;
     } catch (err) {
+      if (timerId !== null) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
       console.warn('PDF load attempt 1 failed or timed out, switching to safe in-memory mode:', err);
       isInMemoryFallbackActive = true;
       try {

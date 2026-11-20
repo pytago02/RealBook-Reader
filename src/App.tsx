@@ -181,7 +181,11 @@ export const App: React.FC = () => {
     const now = Date.now();
     const activeBook: Book = { ...freshBook, lastReadAt: now };
     setCurrentBook(activeBook);
-    setBooks(freshBooks.map((b) => (b.id === activeBook.id ? activeBook : b)));
+    const hasActiveBook = freshBooks.some((b) => b.id === activeBook.id);
+    const updatedBooks = hasActiveBook
+      ? freshBooks.map((b) => (b.id === activeBook.id ? activeBook : b))
+      : [activeBook, ...freshBooks];
+    setBooks(updatedBooks);
 
     // Failsafe timer: loading overlay will NEVER spin longer than 4.5 seconds under any circumstance
     const failsafeTimer = window.setTimeout(() => {
@@ -439,7 +443,6 @@ export const App: React.FC = () => {
         defaultAuthor: author,
         defaultGenre: genre,
         initialTextPages,
-        pdfDoc: pdfDocumentInstance,
       });
     } catch (err) {
       console.error('Import failed:', err);
@@ -504,7 +507,7 @@ export const App: React.FC = () => {
         if (item.initialTextPages) {
           setTextPages(item.initialTextPages);
         }
-        await handleOpenBook(newBook, item.pdfDoc);
+        await handleOpenBook(newBook);
       }
     } catch (err) {
       console.error('Error finalizing book import:', err);
