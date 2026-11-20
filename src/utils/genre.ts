@@ -41,6 +41,27 @@ export const GENRE_LIST: GenreDefinition[] = [
     keywords: ['phiêu lưu', 'trinh thám', 'thám tử', 'kiếm hiệp', 'vụ án', 'ly kỳ', 'sherlock', 'adventure', 'detective', 'mystery'],
   },
   {
+    id: 'truyen_tranh',
+    label: 'Truyện tranh & Manga',
+    keywords: [
+      'truyện tranh',
+      'manga',
+      'comic',
+      'comics',
+      'manhwa',
+      'manhua',
+      'anime',
+      'cbz',
+      'cbr',
+      'doraemon',
+      'dragon ball',
+      'one piece',
+      'naruto',
+      'hoạt họa',
+      'webtoon',
+    ],
+  },
+  {
     id: 'kinh_te',
     label: 'Kinh tế & Quản trị',
     keywords: ['kinh tế', 'kinh doanh', 'tài chính', 'quản trị', 'đầu tư', 'marketing', 'economics', 'business'],
@@ -53,16 +74,23 @@ export const GENRE_LIST: GenreDefinition[] = [
 ];
 
 /**
- * Infer book genre based on title and subjects
+ * Infer book genre based on title and subjects.
+ * Prefers the most specific match (longest matching keyword).
  */
 export function inferGenre(title = '', subjects: string[] = []): string {
   const text = `${title} ${subjects.join(' ')}`.toLowerCase();
 
+  let bestGenre: string | null = null;
+  let bestKeywordLength = 0;
+
   for (const genre of GENRE_LIST) {
-    if (genre.keywords.some((kw) => text.includes(kw))) {
-      return genre.label;
+    for (const kw of genre.keywords) {
+      if (text.includes(kw) && kw.length > bestKeywordLength) {
+        bestKeywordLength = kw.length;
+        bestGenre = genre.label;
+      }
     }
   }
 
-  return 'Văn học & Tiểu thuyết';
+  return bestGenre || 'Văn học & Tiểu thuyết';
 }

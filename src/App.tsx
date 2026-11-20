@@ -5,7 +5,9 @@ import { storageService, DEFAULT_SETTINGS } from './services/storage';
 import { pdfParser } from './services/parsers/pdfParser';
 import { docxParser } from './services/parsers/docxParser';
 import { txtParser } from './services/parsers/txtParser';
+import { cbzParser } from './services/parsers/cbzParser';
 import { SAMPLE_BOOK_PAGES } from './services/sampleBook';
+import { SAMPLE_COMIC_PAGES, SAMPLE_COMIC_TOC } from './services/sampleComic';
 import { Library } from './components/Library';
 import { RealisticBook } from './components/RealisticBook';
 import { ReflowReader } from './components/ReflowReader';
@@ -210,6 +212,14 @@ export const App: React.FC = () => {
         window.clearTimeout(failsafeTimer);
         setIsLoading(false);
         return;
+      } else if (book.id === 'sample-comic-vu-tru') {
+        // Sample Comic Book (Hành Tinh Bí Ẩn)
+        setTextPages(SAMPLE_COMIC_PAGES);
+        setPdfDoc(null);
+        setToc(SAMPLE_COMIC_TOC);
+        window.clearTimeout(failsafeTimer);
+        setIsLoading(false);
+        return;
       }
 
       let doc = preloadedDoc || null;
@@ -234,6 +244,19 @@ export const App: React.FC = () => {
           const parsed = await docxParser.parseDocx(fileData.slice(0));
           setTextPages(parsed.pages);
           setPdfDoc(null);
+          window.clearTimeout(failsafeTimer);
+          setIsLoading(false);
+          return;
+        } else if (book.format === 'cbz') {
+          const parsed = await cbzParser.parseCbz(fileData.slice(0), book.title);
+          setTextPages(parsed.pages);
+          setPdfDoc(null);
+          setToc(
+            parsed.pages.map((_, i) => ({
+              title: `Trang ${i + 1}`,
+              page: i + 1,
+            }))
+          );
           window.clearTimeout(failsafeTimer);
           setIsLoading(false);
           return;
@@ -372,6 +395,11 @@ export const App: React.FC = () => {
         lowerName.endsWith('.docx') ||
         file.type.includes('word') ||
         file.type.includes('document');
+      const isCbz =
+        lowerName.endsWith('.cbz') ||
+        lowerName.endsWith('.cbr') ||
+        file.type === 'application/vnd.comicbook+zip' ||
+        (hasZipMagic && (lowerName.endsWith('.zip') || file.type.includes('zip')));
 
       let format: Book['format'] = 'pdf';
       let totalPages = 1;
@@ -415,6 +443,14 @@ export const App: React.FC = () => {
         const parsed = await docxParser.parseDocx(buffer.slice(0));
         totalPages = parsed.pages.length;
         initialTextPages = parsed.pages;
+      } else if (isCbz || (hasZipMagic && (await cbzParser.isComicZip(buffer.slice(0))))) {
+        format = 'cbz';
+        const parsed = await cbzParser.parseCbz(buffer.slice(0), file.name);
+        totalPages = parsed.totalPages;
+        initialTextPages = parsed.pages;
+        coverUrl = parsed.coverUrl;
+        title = parsed.title || title;
+        author = parsed.author || 'Truyện tranh';
       } else {
         format = 'txt';
         const decoder = new TextDecoder('utf-8');
@@ -426,10 +462,10 @@ export const App: React.FC = () => {
       }
 
       if (!title || /^(content|file):/i.test(title) || /^[0-9_.-]+$/.test(title)) {
-        title = isPdf ? 'Tài liệu PDF' : isDocx ? 'Tài liệu Word' : 'Văn bản';
+        title = isPdf ? 'Tài liệu PDF' : isDocx ? 'Tài liệu Word' : format === 'cbz' ? 'Truyện tranh' : 'Văn bản';
       }
 
-      const genre = inferGenre(title);
+      const genre = format === 'cbz' ? 'Truyện tranh & Manga' : inferGenre(title);
 
       // Open the Metadata Modal so the user can review/edit Title, Author, and Genre!
       setPendingBookImport({
@@ -771,6 +807,10 @@ export const App: React.FC = () => {
           onLoadSample={() => {
             const sample = storageService.createSampleBook();
             handleOpenBook(sample);
+          }}
+          onLoadComicSample={() => {
+            const sampleComic = storageService.createSampleComicBook();
+            handleOpenBook(sampleComic);
           }}
           onDownloadOnlineBook={handleDownloadOnlineBook}
           currentLanguage={settings.language || 'vi'}

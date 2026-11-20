@@ -40,6 +40,19 @@ describe('StorageService & Core Reading Models', () => {
       expect(sample.readingTimeSeconds).toBe(120);
       expect(Array.isArray(sample.tags)).toBe(true);
     });
+
+    it('creates a complete sample comic book object', () => {
+      const comic = storage.createSampleComicBook();
+      expect(comic.id).toBe('sample-comic-vu-tru');
+      expect(comic.title).toBe('Hành Tinh Bí Ẩn (Tập 1)');
+      expect(comic.author).toBe('RealBook Studio');
+      expect(comic.genre).toBe('Truyện tranh & Manga');
+      expect(comic.format).toBe('cbz');
+      expect(comic.totalPages).toBe(6);
+      expect(comic.currentPage).toBe(1);
+      expect(comic.isComic).toBe(true);
+      expect(comic.bookmarks.length).toBeGreaterThan(0);
+    });
   });
 
   describe('Settings CRUD', () => {

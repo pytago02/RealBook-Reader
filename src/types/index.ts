@@ -1,4 +1,4 @@
-export type FileFormat = 'pdf' | 'docx' | 'epub' | 'txt';
+export type FileFormat = 'pdf' | 'docx' | 'epub' | 'txt' | 'cbz';
 
 export type ReaderTheme = 'sepia' | 'warm' | 'white' | 'eink' | 'dark';
 
@@ -43,6 +43,7 @@ export interface Book {
   readingTimeSeconds: number;
   genre?: string;
   tags?: string[];
+  isComic?: boolean;
 }
 
 export interface TypographySettings {

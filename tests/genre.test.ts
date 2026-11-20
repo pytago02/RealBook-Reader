@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { GENRE_LIST, inferGenre, type GenreDefinition } from '../src/utils/genre';
 
 describe('genre utility & inference', () => {
-  it('defines 9 unique genres with proper IDs and non-empty keywords', () => {
-    expect(GENRE_LIST.length).toBe(9);
+  it('defines 10 unique genres with proper IDs and non-empty keywords', () => {
+    expect(GENRE_LIST.length).toBe(10);
     const ids = new Set<string>();
     GENRE_LIST.forEach((g: GenreDefinition) => {
       expect(g.id).toBeTruthy();
@@ -62,6 +62,14 @@ describe('genre utility & inference', () => {
       expect(inferGenre('Thám tử lừng danh Conan')).toBe('Phiêu lưu & Trinh thám');
       expect(inferGenre('Những cuộc phiêu lưu của Tom Sawyer')).toBe('Phiêu lưu & Trinh thám');
       expect(inferGenre('Vụ án mạng trên chuyến tàu')).toBe('Phiêu lưu & Trinh thám');
+    });
+
+    it('infers "Truyện tranh & Manga" for comic and manga keywords', () => {
+      expect(inferGenre('Doraemon tập 1')).toBe('Truyện tranh & Manga');
+      expect(inferGenre('Tuyển tập truyện tranh One Piece')).toBe('Truyện tranh & Manga');
+      expect(inferGenre('Dragon Ball Super', ['manga'])).toBe('Truyện tranh & Manga');
+      expect(inferGenre('Amazing Webtoon Comics', ['comic'])).toBe('Truyện tranh & Manga');
+      expect(inferGenre('Tập truyện tranh Doraemon & Những người bạn')).toBe('Truyện tranh & Manga');
     });
 
     it('infers "Kinh tế & Quản trị" for economics & business', () => {

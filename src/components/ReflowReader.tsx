@@ -100,31 +100,50 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
           </div>
         </div>
 
-        {/* Text Content with Custom Typography */}
-        <div
-          className={`font-${typo.fontFamily.toLowerCase().replace(/\s+/g, '')} select-text whitespace-pre-wrap selection:bg-amber-500/30 leading-relaxed`}
-          style={{
-            fontFamily: typo.fontFamily === 'Be Vietnam Pro'
-              ? "'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-              : typo.fontFamily === 'EB Garamond'
-              ? "'EB Garamond', 'Times New Roman', 'Garamond', serif"
-              : typo.fontFamily === 'Merriweather'
-              ? "'Merriweather', 'Times New Roman', serif"
-              : typo.fontFamily === 'Literata'
-              ? "'Literata', 'Times New Roman', 'Merriweather', serif"
-              : typo.fontFamily === 'Lora'
-              ? "'Lora', 'Times New Roman', serif"
-              : typo.fontFamily === 'Playfair Display'
-              ? "'Playfair Display', 'Times New Roman', serif"
-              : "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            fontSize: `${typo.fontSize}px`,
-            lineHeight: typo.lineHeight,
-            letterSpacing: `${typo.letterSpacing}px`,
-            textAlign: typo.textAlign,
-          }}
-        >
-          {currentPageText}
-        </div>
+        {/* Text or Comic Image Content */}
+        {currentPageText.trim().startsWith('<svg') ? (
+          <div
+            className="w-full flex items-center justify-center my-2 select-none [&>svg]:max-w-full [&>svg]:h-auto shadow-md rounded overflow-hidden"
+            dangerouslySetInnerHTML={{ __html: currentPageText }}
+          />
+        ) : currentPageText.startsWith('data:image/') ||
+          currentPageText.startsWith('blob:') ||
+          currentPageText.startsWith('http://') ||
+          currentPageText.startsWith('https://') ? (
+          <div className="w-full flex items-center justify-center my-2 select-none">
+            <img
+              src={currentPageText}
+              alt={`Trang ${currentPage}`}
+              className="max-w-full max-h-[85vh] object-contain rounded shadow-lg"
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          <div
+            className={`font-${typo.fontFamily.toLowerCase().replace(/\s+/g, '')} select-text whitespace-pre-wrap selection:bg-amber-500/30 leading-relaxed`}
+            style={{
+              fontFamily: typo.fontFamily === 'Be Vietnam Pro'
+                ? "'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                : typo.fontFamily === 'EB Garamond'
+                ? "'EB Garamond', 'Times New Roman', 'Garamond', serif"
+                : typo.fontFamily === 'Merriweather'
+                ? "'Merriweather', 'Times New Roman', serif"
+                : typo.fontFamily === 'Literata'
+                ? "'Literata', 'Times New Roman', 'Merriweather', serif"
+                : typo.fontFamily === 'Lora'
+                ? "'Lora', 'Times New Roman', serif"
+                : typo.fontFamily === 'Playfair Display'
+                ? "'Playfair Display', 'Times New Roman', serif"
+                : "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize: `${typo.fontSize}px`,
+              lineHeight: typo.lineHeight,
+              letterSpacing: `${typo.letterSpacing}px`,
+              textAlign: typo.textAlign,
+            }}
+          >
+            {currentPageText}
+          </div>
+        )}
 
         {/* Bottom Pagination Controls in Reflow */}
         <div className="mt-6 pt-3 border-t border-current/10 flex justify-between items-center text-sm font-mono opacity-60">

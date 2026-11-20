@@ -1,5 +1,6 @@
 import { get, set, del } from 'idb-keyval';
 import type { Book, ReaderSettings, Bookmark, Highlight } from '../types';
+import { SAMPLE_COMIC_BOOK } from './sampleComic';
 
 const BOOKS_META_KEY = 'realbook_library_metadata';
 const BOOK_DATA_PREFIX = 'realbook_file_';
@@ -88,10 +89,19 @@ export class StorageService {
     try {
       const books = await safeGet<Book[]>(BOOKS_META_KEY);
       if (!books || books.length === 0) {
-        // Create initial sample book for quick testing
+        // Create initial sample books for quick testing
         const sampleBook = this.createSampleBook();
+        const sampleComic = this.createSampleComicBook();
         await this.saveBookMeta(sampleBook);
-        return [sampleBook];
+        await this.saveBookMeta(sampleComic);
+        return [sampleBook, sampleComic];
+      }
+
+      // Ensure sample comic book is also available in library if not present
+      if (!books.some((b) => b.id === 'sample-comic-vu-tru')) {
+        const sampleComic = this.createSampleComicBook();
+        books.push(sampleComic);
+        await safeSet(BOOKS_META_KEY, books);
       }
 
       // Sanitize loaded books to guard against any corrupted bookmark or progress data
@@ -176,6 +186,9 @@ export class StorageService {
       if (!book && id === 'sample-hoang-tu-be') {
         book = this.createSampleBook();
         books.push(book);
+      } else if (!book && id === 'sample-comic-vu-tru') {
+        book = this.createSampleComicBook();
+        books.push(book);
       }
       if (book) {
         book.currentPage = page;
@@ -198,6 +211,9 @@ export class StorageService {
       let book = books.find((b) => b.id === bookId);
       if (!book && bookId === 'sample-hoang-tu-be') {
         book = this.createSampleBook();
+        books.push(book);
+      } else if (!book && bookId === 'sample-comic-vu-tru') {
+        book = this.createSampleComicBook();
         books.push(book);
       }
       if (book) {
@@ -241,6 +257,9 @@ export class StorageService {
       if (!book && bookId === 'sample-hoang-tu-be') {
         book = this.createSampleBook();
         books.push(book);
+      } else if (!book && bookId === 'sample-comic-vu-tru') {
+        book = this.createSampleComicBook();
+        books.push(book);
       }
       if (book && book.bookmarks) {
         book.bookmarks = book.bookmarks.filter((b) => {
@@ -264,6 +283,9 @@ export class StorageService {
       let book = books.find((b) => b.id === bookId);
       if (!book && bookId === 'sample-hoang-tu-be') {
         book = this.createSampleBook();
+        books.push(book);
+      } else if (!book && bookId === 'sample-comic-vu-tru') {
+        book = this.createSampleComicBook();
         books.push(book);
       }
       if (book) {
@@ -332,6 +354,17 @@ export class StorageService {
       highlights: [],
       readingTimeSeconds: 120,
       tags: ['Kinh điển', 'Triết lý', 'Văn học'],
+    };
+  }
+
+  /**
+   * Generate initial sample comic book
+   */
+  createSampleComicBook(): Book {
+    return {
+      ...SAMPLE_COMIC_BOOK,
+      addedAt: Date.now(),
+      lastReadAt: Date.now(),
     };
   }
 }

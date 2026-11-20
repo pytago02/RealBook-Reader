@@ -41,6 +41,7 @@ interface LibraryProps {
   onImportFile: (file: File) => void;
   onDeleteBook: (id: string) => void;
   onLoadSample: () => void;
+  onLoadComicSample?: () => void;
   onDownloadOnlineBook?: (book: OnlineBook) => Promise<void>;
   currentLanguage?: AppLanguage;
   onSelectLanguage?: (lang: AppLanguage) => void;
@@ -58,6 +59,7 @@ export const Library: React.FC<LibraryProps> = ({
   onImportFile,
   onDeleteBook,
   onLoadSample,
+  onLoadComicSample,
   onDownloadOnlineBook,
   currentLanguage = "vi",
   onSelectLanguage,
@@ -723,7 +725,7 @@ export const Library: React.FC<LibraryProps> = ({
                   type="file"
                   id="book-upload-input"
                   ref={fileInputRef}
-                  accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,.txt,text/plain,.epub,application/epub+zip,.md,text/markdown"
+                  accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,.txt,text/plain,.epub,application/epub+zip,.md,text/markdown,.cbz,application/vnd.comicbook+zip,.zip,application/zip,application/x-zip-compressed"
                   onChange={handleFileInput}
                   className="hidden"
                 />
@@ -812,6 +814,16 @@ export const Library: React.FC<LibraryProps> = ({
                   <BookOpen className="w-4 h-4 text-amber-400" />
                   {t.shelf.demoSample}
                 </button>
+                {onLoadComicSample && (
+                  <button
+                    onClick={onLoadComicSample}
+                    className="px-4 py-2 rounded-xl border border-pink-700/60 bg-gradient-to-r from-purple-900/40 to-pink-900/30 hover:bg-purple-900/60 text-xs font-semibold text-pink-200 transition-all flex items-center gap-2 shadow-sm"
+                    title="Mở đọc truyện tranh mẫu Hành Tinh Bí Ẩn"
+                  >
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                    Truyện tranh mẫu
+                  </button>
+                )}
               </div>
             </div>
 

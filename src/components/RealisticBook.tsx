@@ -69,6 +69,8 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
 
   const isDouble = !isMobile && settings.pageSpread === 'double';
   const isScanMode = settings.pdfDisplayMode === 'scan';
+  const isComic = book.format === 'cbz' || book.isComic;
+  const isComicOrScan = isScanMode || isComic;
 
   // Compute page numbers for current spread:
   // In double spread: left page is always odd (1, 3, 5, 7...) and right is even (2, 4, 6, 8...)
@@ -366,6 +368,49 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       );
     }
 
+    // 3. Comic / Manga page or SVG vector page
+    const isImagePage =
+      rawContent.startsWith('data:image/') ||
+      rawContent.startsWith('blob:') ||
+      rawContent.startsWith('http://') ||
+      rawContent.startsWith('https://') ||
+      rawContent.trim().startsWith('<svg');
+
+    if (isImagePage) {
+      const userZoom = settings.zoom || 1.0;
+      if (rawContent.trim().startsWith('<svg')) {
+        return (
+          <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden p-0 sm:p-1 select-none">
+            <div
+              className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:object-contain shadow-md rounded"
+              dangerouslySetInnerHTML={{ __html: rawContent }}
+              style={{
+                transform: `scale(${userZoom})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.15s ease-out',
+              }}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden p-0 sm:p-1 select-none">
+          <img
+            src={rawContent}
+            alt={`Trang ${pageNum}`}
+            className="max-h-full max-w-full object-contain rounded shadow-md transition-transform duration-150"
+            style={{
+              transform: `scale(${userZoom})`,
+              transformOrigin: 'center center',
+            }}
+            loading="lazy"
+            draggable={false}
+          />
+        </div>
+      );
+    }
+
     const paragraphs = rawContent.split(/\n\s*\n/);
     const typo = settings.typography;
     const userZoom = settings.zoom || 1.0;
@@ -472,7 +517,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           {/* LEFT PAGE */}
           <div
             key={`page-left-${leftNum}`}
-            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-r border-black/10 book-edge-stack-left ${getThemeClass()} transition-colors duration-200`}
+            className={`flex-1 relative flex flex-col ${isComicOrScan ? 'p-0.5 sm:p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-r border-black/10 book-edge-stack-left ${getThemeClass()} transition-colors duration-200`}
           >
             {/* Silk Ribbon Bookmark for Left Page */}
             {isLeftBookmarked && (
@@ -487,7 +532,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
               />
             )}
             <div className="absolute inset-y-0 right-0 w-16 book-spine-shadow-right pointer-events-none z-20" />
-            {!isScanMode && (
+            {!isComicOrScan && (
               <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
                 <span className="truncate max-w-[200px]">{book.title}</span>
                 <div className="flex items-center gap-1.5">
@@ -509,7 +554,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
               </div>
             )}
             {renderFormattedBookPage(leftNum, isCenter)}
-            {!isScanMode && (
+            {!isComicOrScan && (
               <div className="text-center text-[11px] opacity-40 font-mono mt-1">
                 {leftNum <= totalPages && leftNum >= 1 ? `${leftNum} / ${totalPages}` : ''}
               </div>
@@ -522,7 +567,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           {/* RIGHT PAGE */}
           <div
             key={`page-right-${rightNum}`}
-            className={`flex-1 relative flex flex-col ${isScanMode ? 'p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-l border-black/10 book-edge-stack-right ${getThemeClass()} transition-colors duration-200`}
+            className={`flex-1 relative flex flex-col ${isComicOrScan ? 'p-0.5 sm:p-1' : 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3'} border-l border-black/10 book-edge-stack-right ${getThemeClass()} transition-colors duration-200`}
           >
             {/* Silk Ribbon Bookmark for Right Page */}
             {isRightBookmarked && (
@@ -537,7 +582,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
               />
             )}
             <div className="absolute inset-y-0 left-0 w-16 book-spine-shadow-left pointer-events-none z-20" />
-            {!isScanMode && (
+            {!isComicOrScan && (
               <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
                 <div className="flex items-center gap-1.5">
                   <span>{rightNum <= totalPages && rightNum >= 1 ? rightNum : ''}</span>
@@ -559,7 +604,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
               </div>
             )}
             {renderFormattedBookPage(rightNum, isCenter)}
-            {!isScanMode && (
+            {!isComicOrScan && (
               <div className="text-center text-[11px] opacity-40 font-mono mt-1">
                 {rightNum <= totalPages && rightNum >= 1 ? `${rightNum} / ${totalPages}` : ''}
               </div>
@@ -574,7 +619,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
     return (
       <div
         key={`page-single-${leftNum}`}
-        className={`w-full h-full flex flex-col ${isScanMode ? 'p-1' : 'px-5 py-2.5 sm:px-8 sm:py-3 md:px-10 md:py-3.5'} rounded-2xl shadow-sm border border-black/10 relative ${getThemeClass()} transition-colors duration-200`}
+        className={`w-full h-full flex flex-col ${isComicOrScan ? 'p-0.5 sm:p-1' : 'px-5 py-2.5 sm:px-8 sm:py-3 md:px-10 md:py-3.5'} rounded-2xl shadow-sm border border-black/10 relative ${getThemeClass()} transition-colors duration-200`}
       >
         {/* Silk Ribbon Bookmark for Single Page */}
         {isSingleBookmarked && (
@@ -589,7 +634,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           />
         )}
         <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/20 to-transparent pointer-events-none rounded-l-2xl" />
-        {!isScanMode && (
+        {!isComicOrScan && (
           <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
             <span className="truncate max-w-[250px]">{book.title}</span>
             <div className="flex items-center gap-1.5">
@@ -611,7 +656,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           </div>
         )}
         {renderFormattedBookPage(leftNum, isCenter)}
-        {!isScanMode && (
+        {!isComicOrScan && (
           <div className="text-center text-xs opacity-40 font-mono mt-1">
             {leftNum <= totalPages && leftNum >= 1 ? `Trang ${leftNum} / ${totalPages}` : ''}
           </div>
