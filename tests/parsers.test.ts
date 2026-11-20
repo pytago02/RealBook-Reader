@@ -1,3 +1,4 @@
+import '../src/utils/polyfills';
 import { describe, it, expect } from 'vitest';
 import { txtParser } from '../src/services/parsers/txtParser';
 
@@ -110,6 +111,35 @@ describe('Parsers & Text Processing', () => {
         docxBytes[0] === 0x50 &&
         docxBytes[1] === 0x4B;
       expect(hasZipMagic).toBe(true);
+    });
+  });
+
+  describe('ECMAScript 2024 / Android WebView Polyfills', () => {
+    it('provides Uint8Array.prototype.toHex', () => {
+      const u8 = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+      expect(typeof (u8 as any).toHex).toBe('function');
+      expect((u8 as any).toHex()).toBe('deadbeef');
+    });
+
+    it('provides Uint8Array.fromHex', () => {
+      expect(typeof (Uint8Array as any).fromHex).toBe('function');
+      const u8 = (Uint8Array as any).fromHex('cafe1234');
+      expect(u8[0]).toBe(0xca);
+      expect(u8[1]).toBe(0xfe);
+      expect(u8[2]).toBe(0x12);
+      expect(u8[3]).toBe(0x34);
+    });
+
+    it('provides Promise.withResolvers', () => {
+      expect(typeof Promise.withResolvers).toBe('function');
+      const { promise, resolve } = Promise.withResolvers<string>();
+      resolve('ok');
+      return promise.then((res) => expect(res).toBe('ok'));
+    });
+
+    it('provides Promise.try', () => {
+      expect(typeof (Promise as any).try).toBe('function');
+      return (Promise as any).try(() => 42).then((res: number) => expect(res).toBe(42));
     });
   });
 });
