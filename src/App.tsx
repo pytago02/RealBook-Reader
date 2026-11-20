@@ -18,6 +18,7 @@ import { Loader2, EyeOff } from 'lucide-react';
 import { freeBooksApi, type OnlineBook } from './services/freeBooksApi';
 import { inferGenre } from './utils/genre';
 import { ToastContainer, type ToastMessage } from './components/Toast';
+import { BookMetadataModal, type PendingBookData, type BookMetadataForm } from './components/BookMetadataModal';
 import { getTranslation } from './i18n';
 import { setupNativeStatusBar, registerBackButtonHandler } from './utils/mobile';
 
@@ -78,6 +79,7 @@ export const App: React.FC = () => {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [isTypoModalOpen, setIsTypoModalOpen] = useState<boolean>(false);
   const [isTocModalOpen, setIsTocModalOpen] = useState<boolean>(false);
+  const [pendingBookImport, setPendingBookImport] = useState<PendingBookData | null>(null);
 
   // Load books & settings on startup
   useEffect(() => {
@@ -380,20 +382,22 @@ export const App: React.FC = () => {
 
       const newBookId = `book-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      // Save binary copy to IndexedDB safely
-      await storageService.saveBookFile(newBookId, buffer.slice(0));
-
       if (isPdf) {
         format = 'pdf';
         pdfDocumentInstance = await pdfParser.loadDocument(buffer.slice(0));
         totalPages = Math.max(1, pdfDocumentInstance.numPages);
 
-        // Try extracting embedded PDF title metadata if available
+        // Try extracting embedded PDF title & author metadata if available
         try {
           const meta = await pdfDocumentInstance.getMetadata().catch(() => null);
-          const metaTitle = (meta?.info as Record<string, any> | undefined)?.Title;
+          const info = meta?.info as Record<string, any> | undefined;
+          const metaTitle = info?.Title;
           if (typeof metaTitle === 'string' && metaTitle.trim().length > 1) {
             title = metaTitle.trim();
+          }
+          const metaAuthor = info?.Author;
+          if (typeof metaAuthor === 'string' && metaAuthor.trim().length > 1) {
+            author = metaAuthor.trim();
           }
         } catch {}
 
@@ -422,16 +426,62 @@ export const App: React.FC = () => {
       }
 
       const genre = inferGenre(title);
-      const newBook: Book = {
+
+      // Open the Metadata Modal so the user can review/edit Title, Author, and Genre!
+      setPendingBookImport({
         id: newBookId,
-        title,
-        author,
-        genre,
+        buffer: buffer.slice(0),
         format,
         totalPages,
-        currentPage: 1,
         coverUrl,
         fileSize: file.size,
+        defaultTitle: title,
+        defaultAuthor: author,
+        defaultGenre: genre,
+        initialTextPages,
+        pdfDoc: pdfDocumentInstance,
+      });
+    } catch (err) {
+      console.error('Import failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast({
+        type: 'error',
+        title: 'Lỗi nạp file',
+        message: `Không thể đọc file đã chọn (${msg}). Vui lòng kiểm tra định dạng.`,
+      });
+    } finally {
+      window.clearTimeout(failsafeTimer);
+      setIsLoading(false);
+    }
+  };
+
+  // Confirm and persist book import with customized Title, Author, and Genre
+  const handleConfirmBookImport = async (form: BookMetadataForm, openImmediately: boolean) => {
+    if (!pendingBookImport) return;
+    const item = pendingBookImport;
+    setPendingBookImport(null);
+
+    setIsLoading(true);
+    setLoadingText(openImmediately ? 'Đang mở sách...' : 'Đang lưu sách...');
+
+    try {
+      // Save binary copy to IndexedDB safely
+      await storageService.saveBookFile(item.id, item.buffer);
+
+      const finalTitle = form.title.trim() || item.defaultTitle || 'Tài liệu';
+      const finalAuthor = form.author.trim() || item.defaultAuthor || 'Cá nhân';
+      const finalGenre = form.genre.trim() || item.defaultGenre || 'Văn học & Tiểu thuyết';
+
+      const newBook: Book = {
+        id: item.id,
+        title: finalTitle,
+        author: finalAuthor,
+        genre: finalGenre,
+        format: item.format,
+        totalPages: item.totalPages,
+        currentPage: 1,
+        coverUrl: item.coverUrl,
+        fileSize: item.fileSize,
         addedAt: Date.now(),
         lastReadAt: Date.now(),
         bookmarks: [],
@@ -447,25 +497,24 @@ export const App: React.FC = () => {
       showToast({
         type: 'success',
         title: 'Nạp sách thành công',
-        message: `Đã thêm "${newBook.title}" vào kệ sách (${genre}).`,
+        message: `Đã thêm "${newBook.title}" vào kệ sách (${newBook.genre}).`,
       });
 
-      if (initialTextPages) {
-        setTextPages(initialTextPages);
+      if (openImmediately) {
+        if (item.initialTextPages) {
+          setTextPages(item.initialTextPages);
+        }
+        await handleOpenBook(newBook, item.pdfDoc);
       }
-
-      // Open book instantly by passing the already parsed doc
-      await handleOpenBook(newBook, pdfDocumentInstance);
     } catch (err) {
-      console.error('Import failed:', err);
+      console.error('Error finalizing book import:', err);
       const msg = err instanceof Error ? err.message : String(err);
       showToast({
         type: 'error',
-        title: 'Lỗi nạp file',
-        message: `Không thể đọc file đã chọn (${msg}). Vui lòng kiểm tra định dạng.`,
+        title: 'Lỗi lưu sách',
+        message: `Không thể lưu thông tin sách (${msg}).`,
       });
     } finally {
-      window.clearTimeout(failsafeTimer);
       setIsLoading(false);
     }
   };
@@ -876,6 +925,14 @@ export const App: React.FC = () => {
           </ErrorBoundary>
         </div>
       )}
+
+      {/* Book Metadata Customization Modal when importing file */}
+      <BookMetadataModal
+        isOpen={!!pendingBookImport}
+        data={pendingBookImport}
+        onConfirm={handleConfirmBookImport}
+        onCancel={() => setPendingBookImport(null)}
+      />
 
       {/* Global Synchronized System Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
