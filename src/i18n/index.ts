@@ -262,8 +262,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       lineHeight: 'Khoảng cách dòng',
       letterSpacing: 'Khoảng cách chữ',
       alignment: 'Căn lề',
-      alignJustify: 'Căn đều hai bên',
-      alignLeft: 'Căn lề trái',
+      alignJustify: 'Căn giữa',
+      alignLeft: 'Căn trái',
     },
     tocModal: {
       title: 'Mục lục & Dấu trang',

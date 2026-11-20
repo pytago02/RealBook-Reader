@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   ArrowLeft,
   Bookmark as BookmarkIcon,
@@ -17,10 +17,11 @@ import {
   ZoomIn,
   ZoomOut,
   Focus,
-} from 'lucide-react';
-import type { Book, ReaderSettings } from '../types';
-import { getTranslation } from '../i18n';
-import { AppLogo } from './AppLogo';
+  Sparkles,
+  FileText,
+} from "lucide-react";
+import type { Book, ReaderSettings } from "../types";
+import { getTranslation } from "../i18n";
 
 interface ZenToolbarProps {
   book: Book;
@@ -77,46 +78,51 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
   onZoomOut,
   onResetZoom,
 }) => {
-  const t = getTranslation(settings.language || 'vi');
-  const percent = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
+  const t = getTranslation(settings.language || "vi");
+  const percent =
+    totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
   const zoomPercent = Math.round((settings.zoom || 1.0) * 100);
 
   return (
     <>
       {/* Top Floating Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-4 py-2.5 flex items-center justify-between backdrop-blur-md border-b ${
-          isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-3 sm:px-4 py-2 sm:py-2.5 pt-safe flex items-center justify-between backdrop-blur-md border-b ${
+          isVisible
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0 pointer-events-none"
         } ${
-          settings.theme === 'dark'
-            ? 'bg-[#18191d]/90 border-[#282930] text-gray-200 shadow-lg'
-            : settings.theme === 'sepia' || settings.theme === 'warm'
-            ? 'bg-[#3b2d1d]/90 border-[#4e3d29] text-[#fbf6ec] shadow-lg'
-            : 'bg-white/90 border-gray-200 text-gray-800 shadow-md'
+          settings.theme === "dark"
+            ? "bg-[#18191d]/90 border-[#282930] text-gray-200 shadow-lg"
+            : settings.theme === "sepia" || settings.theme === "warm"
+              ? "bg-[#3b2d1d]/90 border-[#4e3d29] text-[#fbf6ec] shadow-lg"
+              : "bg-white/90 border-gray-200 text-gray-800 shadow-md"
         }`}
       >
         {/* Left: Back & Book Info */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
           <button
             onClick={onBackToLibrary}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 text-sm font-medium"
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex items-center gap-1.5 text-sm font-medium shrink-0"
             title={t.reader.backToLibrary}
           >
             <ArrowLeft className="w-4 h-4" />
-            <AppLogo className="w-4 h-4 rounded object-contain hidden sm:inline-block" />
-            <span className="hidden sm:inline">{t.header.badgeShelf}</span>
           </button>
-          <div className="border-l border-current/20 h-5" />
-          <div className="truncate max-w-[180px] md:max-w-[350px]">
-            <h1 className="text-sm font-semibold truncate leading-tight">{book.title}</h1>
-            <p className="text-xs opacity-70 truncate">{book.author || t.shelf.unknownAuthor}</p>
+          <div className="border-l border-current/20 h-5 shrink-0" />
+          <div className="truncate min-w-0 max-w-[120px] sm:max-w-[220px] md:max-w-[350px]">
+            <h1 className="text-xs sm:text-sm font-semibold truncate leading-tight">
+              {book.title}
+            </h1>
+            <p className="text-[10px] sm:text-xs opacity-70 truncate">
+              {book.author || t.shelf.unknownAuthor}
+            </p>
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center space-x-1 sm:space-x-1.5">
-          {/* Zoom Controls (especially useful for PDF reading) */}
-          <div className="flex items-center space-x-0.5 bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded-lg mr-1">
+        <div className="flex items-center space-x-0.5 sm:space-x-1.5 shrink-0">
+          {/* Zoom Controls (Desktop / Tablet) */}
+          <div className="hidden md:flex items-center space-x-0.5 bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded-lg mr-1">
             <button
               onClick={onZoomOut}
               className="p-1.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
@@ -140,10 +146,10 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
             </button>
           </div>
 
-          {/* TOC */}
+          {/* TOC & Bookmarks */}
           <button
             onClick={onOpenTocModal}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
             title={t.reader.tocBookmarks}
           >
             <List className="w-4 h-4" />
@@ -151,55 +157,72 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
 
           {/* Bookmark Ribbon Button */}
           <button
-            onClick={onToggleBookmark}
-            className={`p-2 rounded-lg transition-all ${
+            onClick={() => onToggleBookmark()}
+            className={`p-1.5 sm:p-2 rounded-lg transition-all ${
               isBookmarked
-                ? 'text-amber-500 bg-amber-500/15'
-                : 'hover:bg-black/10 dark:hover:bg-white/10 opacity-80'
+                ? "text-amber-500 bg-amber-500/15"
+                : "hover:bg-black/10 dark:hover:bg-white/10 opacity-80"
             }`}
             title={isBookmarked ? t.reader.bookmarked : t.reader.bookmarkPage}
           >
-            <BookmarkIcon className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+            <BookmarkIcon
+              className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`}
+            />
           </button>
 
-          {/* Spread Mode Toggle (Double vs Single Page) */}
+          {/* Spread Mode Toggle (Double vs Single Page - Desktop only) */}
           <button
             onClick={onToggleSpread}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            title={settings.pageSpread === 'double' ? t.reader.spreadSingle : t.reader.spreadDouble}
+            className="hidden md:inline-flex p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            title={
+              settings.pageSpread === "double"
+                ? t.reader.spreadSingle
+                : t.reader.spreadDouble
+            }
           >
-            {settings.pageSpread === 'double' ? (
+            {settings.pageSpread === "double" ? (
               <Columns className="w-4 h-4" />
             ) : (
               <Square className="w-4 h-4" />
             )}
           </button>
 
-          {/* PDF Mode Toggle (Book Typography like Demo vs Original Scan) */}
-          {book.format === 'pdf' && (
+          {/* PDF Mode Toggle (Dàn trang sách đẹp vs Bản scan gốc - Icon Only) */}
+          {book.format === "pdf" && (
             <button
               onClick={onTogglePdfDisplayMode}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm ${
-                settings.pdfDisplayMode === 'book'
-                  ? 'bg-amber-500/25 text-amber-500 dark:text-amber-300 border border-amber-500/50 font-semibold'
-                  : 'bg-black/10 dark:bg-white/10 text-gray-400 hover:text-gray-200'
+              className={`p-1.5 sm:p-2 rounded-lg transition-all ${
+                settings.pdfDisplayMode === "book"
+                  ? "text-amber-500 bg-amber-500/15 font-semibold"
+                  : "hover:bg-black/10 dark:hover:bg-white/10 opacity-80 hover:opacity-100 text-gray-300"
               }`}
-              title={settings.pdfDisplayMode === 'book' ? t.reader.pdfModeScan : t.reader.pdfModeBook}
+              title={
+                settings.pdfDisplayMode === "book"
+                  ? t.reader.pdfModeScan
+                  : t.reader.pdfModeBook
+              }
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>
-                {settings.pdfDisplayMode === 'book' ? t.reader.pdfModeBook : t.reader.pdfModeScan}
-              </span>
+              {settings.pdfDisplayMode === "book" ? (
+                <Sparkles className="w-4 h-4 text-amber-400" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
             </button>
           )}
 
           {/* Viewer Mode Toggle (Realistic Book vs Reflow text) */}
           <button
             onClick={onToggleViewerMode}
-            className={`p-2 rounded-lg transition-colors ${
-              settings.viewerMode === 'reflow' ? 'bg-amber-500/20 text-amber-500 font-bold' : 'hover:bg-black/10 dark:hover:bg-white/10'
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              settings.viewerMode === "reflow"
+                ? "bg-amber-500/20 text-amber-500 font-bold"
+                : "hover:bg-black/10 dark:hover:bg-white/10"
             }`}
-            title={settings.viewerMode === 'realistic' ? t.reader.viewerMode3D : t.reader.viewerModeScroll}
+            title={
+              settings.viewerMode === "realistic"
+                ? t.reader.viewerMode3D
+                : t.reader.viewerModeScroll
+            }
           >
             <BookOpen className="w-4 h-4" />
           </button>
@@ -207,7 +230,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
           {/* Eye Comfort Theme */}
           <button
             onClick={onOpenThemeModal}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
             title={t.reader.themeComfort}
           >
             <SunMedium className="w-4 h-4" />
@@ -216,7 +239,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
           {/* Typography Controls */}
           <button
             onClick={onOpenTypographyModal}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
             title={t.reader.typography}
           >
             <Type className="w-4 h-4" />
@@ -225,8 +248,10 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
           {/* Sound Toggle */}
           <button
             onClick={onToggleSound}
-            className={`p-2 rounded-lg transition-colors ${
-              settings.soundEnabled ? 'hover:bg-black/10 dark:hover:bg-white/10' : 'opacity-40 hover:opacity-100'
+            className={`hidden sm:inline-flex p-2 rounded-lg transition-colors ${
+              settings.soundEnabled
+                ? "hover:bg-black/10 dark:hover:bg-white/10"
+                : "opacity-40 hover:opacity-100"
             }`}
             title={settings.soundEnabled ? t.reader.soundOn : t.reader.soundOff}
           >
@@ -237,24 +262,27 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
             )}
           </button>
 
-          {/* Focus Mode (Tập trung) */}
+          {/* Focus Mode (Tập trung - Icon Only) */}
           <button
             onClick={onToggleFocusMode}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-all ${
               isFocusMode
-                ? 'bg-amber-500 text-black font-semibold'
-                : 'bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 text-gray-300'
+                ? "text-amber-500 bg-amber-500/15 font-semibold"
+                : "hover:bg-black/10 dark:hover:bg-white/10 opacity-80 hover:opacity-100 text-gray-300"
             }`}
-            title={isFocusMode ? t.reader.exitFocusMode : t.reader.enterFocusMode}
+            title={
+              isFocusMode ? t.reader.exitFocusMode : t.reader.enterFocusMode
+            }
           >
-            <Focus className="w-4 h-4 text-amber-400" />
-            <span className="hidden md:inline">{t.reader.focusMode}</span>
+            <Focus
+              className={`w-4 h-4 ${isFocusMode ? "text-amber-400" : ""}`}
+            />
           </button>
 
           {/* Fullscreen / Zen */}
           <button
             onClick={onToggleFullscreen}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="hidden sm:inline-flex p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
             title={isFullscreen ? t.reader.exitFullscreen : t.reader.fullscreen}
           >
             {isFullscreen ? (
@@ -268,30 +296,32 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
 
       {/* Bottom Floating Footer / Reading Progress */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-4 py-2.5 backdrop-blur-md border-t ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+        className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-3 sm:px-4 py-2 sm:py-2.5 pb-safe backdrop-blur-md border-t ${
+          isVisible
+            ? "translate-y-0 opacity-100"
+            : "translate-y-full opacity-0 pointer-events-none"
         } ${
-          settings.theme === 'dark'
-            ? 'bg-[#18191d]/90 border-[#282930] text-gray-200 shadow-lg'
-            : settings.theme === 'sepia' || settings.theme === 'warm'
-            ? 'bg-[#3b2d1d]/90 border-[#4e3d29] text-[#fbf6ec] shadow-lg'
-            : 'bg-white/90 border-gray-200 text-gray-800 shadow-md'
+          settings.theme === "dark"
+            ? "bg-[#18191d]/90 border-[#282930] text-gray-200 shadow-lg"
+            : settings.theme === "sepia" || settings.theme === "warm"
+              ? "bg-[#3b2d1d]/90 border-[#4e3d29] text-[#fbf6ec] shadow-lg"
+              : "bg-white/90 border-gray-200 text-gray-800 shadow-md"
         }`}
       >
-        <div className="max-w-2xl mx-auto flex items-center space-x-3">
+        <div className="max-w-2xl mx-auto flex items-center space-x-2 sm:space-x-3">
           {/* Previous Page */}
           <button
             onClick={onPrevPage}
             disabled={currentPage <= 1}
-            className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 transition-colors"
+            className="p-1 sm:p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 transition-colors shrink-0"
             title={t.reader.prevPage}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
 
           {/* Progress Slider */}
-          <div className="flex-1 flex items-center space-x-3">
-            <span className="text-xs font-mono min-w-[50px] text-right">
+          <div className="flex-1 flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <span className="text-[11px] sm:text-xs font-mono min-w-[36px] sm:min-w-[50px] text-right shrink-0">
               {currentPage}
             </span>
             <input
@@ -300,10 +330,10 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
               max={Math.max(1, totalPages)}
               value={currentPage}
               onChange={(e) => onPageChange(Number(e.target.value))}
-              className="flex-1 h-1.5 bg-current/20 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              className="flex-1 h-2 sm:h-1.5 bg-current/20 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
-            <span className="text-xs font-mono min-w-[65px]">
-              / {totalPages} ({percent}%)
+            <span className="text-[11px] sm:text-xs font-mono min-w-[55px] sm:min-w-[65px] shrink-0 text-right">
+              /{totalPages} ({percent}%)
             </span>
           </div>
 
@@ -311,7 +341,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
           <button
             onClick={onNextPage}
             disabled={currentPage >= totalPages}
-            className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 transition-colors"
+            className="p-1 sm:p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 transition-colors shrink-0"
             title={t.reader.nextPage}
           >
             <ChevronRight className="w-5 h-5" />

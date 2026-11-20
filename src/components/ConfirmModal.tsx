@@ -41,11 +41,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+      onClick={onCancel}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md bg-[#1a1b22] border border-gray-800 rounded-2xl p-6 shadow-2xl shadow-black/80 transform transition-all animate-scale-up"
+        className="relative w-full max-w-md bg-[#1a1b22] border border-gray-800 rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 pb-safe sm:pb-6 shadow-2xl shadow-black/80 transform transition-all animate-scale-up"
       >
+        {/* Mobile Drag Indicator */}
+        <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-3 sm:hidden" />
+
         {/* Close Button */}
         <button
           onClick={onCancel}

@@ -32,11 +32,17 @@ export const TypographyControl: React.FC<TypographyControlProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-md bg-[#202127] text-gray-100 rounded-2xl shadow-2xl border border-gray-700/60 p-6 overflow-hidden"
+        className="w-full max-w-md bg-[#202127] text-gray-100 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-gray-700/60 p-5 sm:p-6 pb-safe sm:pb-6 overflow-hidden max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile Drag Indicator */}
+        <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-3 sm:hidden" />
+
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-700/50">
           <div className="flex items-center space-x-2">

@@ -78,11 +78,35 @@ function startApp(electron) {
       iconPath = pngCandidates.find((p) => fs.existsSync(p)) || icoCandidates.find((p) => fs.existsSync(p));
     }
 
+    const pngPath = pngCandidates.find((p) => fs.existsSync(p));
     let appIcon = null;
     if (iconPath && fs.existsSync(iconPath)) {
       const img = nativeImage.createFromPath(iconPath);
       if (!img.isEmpty()) {
         appIcon = img;
+      }
+    }
+    if ((!appIcon || appIcon.isEmpty()) && pngPath && fs.existsSync(pngPath)) {
+      const img = nativeImage.createFromPath(pngPath);
+      if (!img.isEmpty()) {
+        appIcon = img;
+      }
+    }
+
+    // If the icon is inside an asar archive, extract it to userData so Windows Win32 APIs (LoadImage, WM_SETICON) can read it directly from disk
+    let physicalIconPath = iconPath;
+    if (iconPath && (iconPath.includes('.asar') || !fs.existsSync(iconPath))) {
+      try {
+        const ext = path.extname(iconPath) || (isWin ? '.ico' : '.png');
+        const diskTarget = path.join(app.getPath('userData'), `app-icon${ext}`);
+        if (!fs.existsSync(diskTarget) || (fs.existsSync(iconPath) && fs.statSync(diskTarget).size !== fs.statSync(iconPath).size)) {
+          fs.writeFileSync(diskTarget, fs.readFileSync(iconPath));
+        }
+        if (fs.existsSync(diskTarget)) {
+          physicalIconPath = diskTarget;
+        }
+      } catch (err) {
+        console.warn('[RealBook] Could not extract icon to userData disk path:', err);
       }
     }
 
@@ -93,7 +117,7 @@ function startApp(electron) {
       minHeight: 560,
       backgroundColor: '#121316',
       title: 'RealBook Reader',
-      icon: iconPath || appIcon,
+      icon: physicalIconPath || appIcon || iconPath,
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: false,
@@ -103,14 +127,15 @@ function startApp(electron) {
       },
     });
 
-    if (iconPath) {
+    if (physicalIconPath && fs.existsSync(physicalIconPath)) {
       try {
-        mainWindow.setIcon(iconPath);
-      } catch {
-        if (appIcon) mainWindow.setIcon(appIcon);
-      }
-    } else if (appIcon) {
-      mainWindow.setIcon(appIcon);
+        mainWindow.setIcon(physicalIconPath);
+      } catch {}
+    }
+    if (appIcon && !appIcon.isEmpty()) {
+      try {
+        mainWindow.setIcon(appIcon);
+      } catch {}
     }
 
     Menu.setApplicationMenu(null);

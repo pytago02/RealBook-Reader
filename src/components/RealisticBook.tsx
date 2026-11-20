@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import type { Book, ReaderSettings } from '../types';
 import { soundService } from '../services/sound';
 import { ChevronLeft, ChevronRight, Bookmark } from 'lucide-react';
+import { triggerHaptic } from '../utils/mobile';
 
 interface RealisticBookProps {
   book: Book;
@@ -55,7 +56,19 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   const startXRef = useRef<number>(0);
   const startYRef = useRef<number>(0);
 
-  const isDouble = settings.pageSpread === 'double';
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isDouble = !isMobile && settings.pageSpread === 'double';
   const isScanMode = settings.pdfDisplayMode === 'scan';
 
   // Compute page numbers for current spread:
@@ -82,6 +95,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       if (direction === 'prev' && currentPage <= 1) return;
       if (isSliding) return; // Prevent double trigger during transition
 
+      triggerHaptic('light');
       if (settings.soundEnabled) {
         soundService.playPageTurn(settings.soundVolume);
       }
@@ -667,9 +681,22 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'changedTouches' in e && e.changedTouches.length > 0
+        ? e.changedTouches[0].clientX
+        : 'clientX' in e
+        ? e.clientX
+        : startXRef.current;
+      const clientY = 'changedTouches' in e && e.changedTouches.length > 0
+        ? e.changedTouches[0].clientY
+        : 'clientY' in e
+        ? e.clientY
+        : startYRef.current;
+      const totalDeltaX = clientX - startXRef.current;
+      const totalDeltaY = clientY - startYRef.current;
+
       if (dragModeRef.current === 'slide') {
-        const threshold = 60;
+        const threshold = isMobile ? 35 : 60;
         if (dragOffset < -threshold && currentPage < totalPages) {
           executeSlide('next');
         } else if (dragOffset > threshold && currentPage > 1) {
@@ -678,6 +705,14 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           // Snap back smoothly
           setDisableTransition(false);
           setDragOffset(0);
+        }
+      } else if (!dragModeRef.current && Math.abs(totalDeltaX) < 12 && Math.abs(totalDeltaY) < 12) {
+        // Quick edge-tap navigation on mobile / touch screen
+        const winW = window.innerWidth;
+        if (clientX < winW * 0.25 && currentPage > 1) {
+          executeSlide('prev');
+        } else if (clientX > winW * 0.75 && currentPage < totalPages) {
+          executeSlide('next');
         }
       }
 
@@ -717,20 +752,20 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       onMouseDown={handleStartDrag}
       onTouchStart={handleStartDrag}
       className={`relative w-full h-full flex items-center justify-center overflow-hidden select-none ${
-        isFocusMode ? 'p-1 sm:p-2' : 'pt-13 pb-14 px-2 sm:px-4'
+        isFocusMode ? 'p-0 sm:p-2' : 'pt-safe pb-safe px-0 sm:px-4'
       } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       style={{
         filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`,
       }}
     >
-      {/* Side Arrow Navigation Buttons */}
+      {/* Side Arrow Navigation Buttons (Desktop / Large screen only; Mobile uses edge tap & gestures) */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           turnPrev();
         }}
         disabled={currentPage <= 1 || !!isSliding}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-black/25 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all shadow-lg disabled:opacity-0 disabled:pointer-events-none"
+        className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-black/25 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all shadow-lg disabled:opacity-0 disabled:pointer-events-none"
         title="Trang trước (Mũi tên trái)"
       >
         <ChevronLeft className="w-6 h-6" />
@@ -742,7 +777,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           turnNext();
         }}
         disabled={currentPage >= totalPages || !!isSliding}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-black/25 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all shadow-lg disabled:opacity-0 disabled:pointer-events-none"
+        className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-black/25 hover:bg-black/60 text-white/80 hover:text-white backdrop-blur-md transition-all shadow-lg disabled:opacity-0 disabled:pointer-events-none"
         title="Trang sau (Mũi tên phải)"
       >
         <ChevronRight className="w-6 h-6" />
@@ -752,9 +787,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       <div
         className="relative flex rounded-xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] border border-black/10 select-none overflow-hidden"
         style={{
-          maxWidth: isDouble ? 'min(98vw, 1800px)' : 'min(96vw, 1100px)',
+          maxWidth: isDouble ? 'min(98vw, 1800px)' : isMobile ? '100vw' : 'min(96vw, 1100px)',
           width: '100%',
-          height: isFocusMode ? 'calc(100vh - 12px)' : 'calc(100vh - 116px)',
+          height: isFocusMode ? 'calc(100vh - 8px)' : isMobile ? 'calc(100vh - 100px)' : 'calc(100vh - 116px)',
         }}
       >
         {/* 3-SLIDE HORIZONTAL CAROUSEL TRACK */}

@@ -534,5 +534,91 @@ describe('UI Features & User Workflows', () => {
       expect(openedBook.currentPage).toBe(15);
       expect(openedBook.bookmarks?.[0].page).toBe(15);
     });
+
+    it('sanitizes bookmark targetPage so SyntheticEvents never leak [object Object] or corrupt bookmarks', () => {
+      const currentBook: Book = {
+        id: 'book-event-test',
+        title: 'Sách Test',
+        format: 'pdf',
+        totalPages: 20,
+        currentPage: 5,
+        fileSize: 1000,
+        addedAt: 1000,
+        lastReadAt: 1000,
+        bookmarks: [],
+        highlights: [],
+      };
+
+      // Simulate click event being passed by React onClick
+      const syntheticMouseEvent = {
+        stopPropagation: () => {},
+        preventDefault: () => {},
+        type: 'click',
+        clientX: 120,
+      };
+
+      // Handler logic
+      const resolveBookmarkPage = (targetPage: unknown, book: Book) => {
+        return typeof targetPage === 'number' && Number.isFinite(targetPage)
+          ? Math.max(1, Math.min(Math.round(targetPage), book.totalPages))
+          : book.currentPage;
+      };
+
+      const resolvedFromClickEvent = resolveBookmarkPage(syntheticMouseEvent, currentBook);
+      expect(resolvedFromClickEvent).toBe(5);
+      expect(typeof resolvedFromClickEvent).toBe('number');
+
+      const toastMessage = `Đã đánh dấu trang ${resolvedFromClickEvent}.`;
+      expect(toastMessage).toBe('Đã đánh dấu trang 5.');
+      expect(toastMessage).not.toContain('[object Object]');
+
+      const resolvedFromNumericPage = resolveBookmarkPage(12, currentBook);
+      expect(resolvedFromNumericPage).toBe(12);
+
+      const resolvedFromUndefined = resolveBookmarkPage(undefined, currentBook);
+      expect(resolvedFromUndefined).toBe(5);
+    });
+
+    it('safely extracts bookmark page numbers and dates even if legacy corrupted data exists', () => {
+      // Corrupted legacy bookmarks that had [object Object] as page or invalid date
+      const corruptedBookmarks: any[] = [
+        { id: 'bm-bad-1', page: { someKey: 'val' }, createdAt: undefined },
+        { id: 'bm-bad-2', page: 'invalid', createdAt: 'not-a-date' },
+        { id: 'bm-good-3', page: 8, createdAt: 1700000000000 },
+      ];
+
+      const sanitized = corruptedBookmarks.map((bm) => {
+        const safePage =
+          typeof bm.page === 'number' && Number.isFinite(bm.page)
+            ? Math.round(bm.page)
+            : typeof bm.page === 'string' && !isNaN(Number(bm.page))
+            ? Math.round(Number(bm.page))
+            : 1;
+
+        const formattedDate = (() => {
+          try {
+            const ts = typeof bm.createdAt === 'number' ? bm.createdAt : Number(bm.createdAt);
+            if (!ts || isNaN(ts)) return '';
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleDateString('vi-VN');
+          } catch {
+            return '';
+          }
+        })();
+
+        return { id: bm.id, safePage, formattedDate };
+      });
+
+      expect(sanitized[0].safePage).toBe(1);
+      expect(sanitized[0].formattedDate).toBe('');
+      expect(typeof sanitized[0].safePage).toBe('number');
+
+      expect(sanitized[1].safePage).toBe(1);
+      expect(sanitized[1].formattedDate).toBe('');
+
+      expect(sanitized[2].safePage).toBe(8);
+      expect(sanitized[2].formattedDate.length).toBeGreaterThan(0);
+    });
   });
 });

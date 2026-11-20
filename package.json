@@ -7,17 +7,24 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "predev": "node scripts/patch-electron-icon.cjs",
+    "build": "node scripts/patch-electron-icon.cjs && tsc -b && vite build",
     "build:exe": "npm run build && electron-builder --win --x64",
     "cap:sync": "npm run build && npx cap sync android",
     "test": "vitest run",
     "icons:generate": "node scripts/generate-icons.cjs",
+    "icons:patch": "node scripts/patch-electron-icon.cjs",
+    "preapp": "node scripts/patch-electron-icon.cjs",
+    "preapp:dev": "node scripts/patch-electron-icon.cjs",
     "preview": "vite preview",
     "app": "npm run build && cross-env ELECTRON_RUN_AS_NODE= electron electron/main.cjs",
     "app:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development ELECTRON_RUN_AS_NODE= VITE_DEV_SERVER_URL=http://localhost:5173 electron electron/main.cjs\""
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "idb-keyval": "^6.3.0",
     "jszip": "^3.10.2",
     "lucide-react": "^1.73.0",
@@ -56,6 +63,10 @@
       "dist/**/*",
       "electron/**/*",
       "public/**/*"
+    ],
+    "asarUnpack": [
+      "**/public/icon.ico",
+      "**/public/icon.png"
     ],
     "win": {
       "target": [

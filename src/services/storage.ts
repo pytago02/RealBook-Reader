@@ -93,6 +93,28 @@ export class StorageService {
         await this.saveBookMeta(sampleBook);
         return [sampleBook];
       }
+
+      // Sanitize loaded books to guard against any corrupted bookmark or progress data
+      books.forEach((b) => {
+        if (b && Array.isArray(b.bookmarks)) {
+          b.bookmarks = b.bookmarks
+            .filter((bm) => bm && typeof bm === 'object')
+            .map((bm) => ({
+              ...bm,
+              page:
+                typeof bm.page === 'number' && Number.isFinite(bm.page)
+                  ? Math.round(bm.page)
+                  : typeof bm.page === 'string' && !isNaN(Number(bm.page))
+                  ? Math.round(Number(bm.page))
+                  : 1,
+              createdAt:
+                typeof bm.createdAt === 'number' && Number.isFinite(bm.createdAt)
+                  ? bm.createdAt
+                  : Date.now(),
+            }));
+        }
+      });
+
       return books;
     } catch (e) {
       console.error('Failed to get books:', e);
@@ -180,11 +202,29 @@ export class StorageService {
       }
       if (book) {
         if (!book.bookmarks) book.bookmarks = [];
-        const idx = book.bookmarks.findIndex((b) => b.page === bookmark.page);
+
+        const cleanPage =
+          typeof bookmark.page === 'number' && Number.isFinite(bookmark.page)
+            ? Math.round(bookmark.page)
+            : typeof bookmark.page === 'string' && !isNaN(Number(bookmark.page))
+            ? Math.round(Number(bookmark.page))
+            : 1;
+
+        const cleanBookmark: Bookmark = {
+          ...bookmark,
+          page: cleanPage,
+          label: bookmark.label || `Trang ${cleanPage}`,
+          createdAt:
+            typeof bookmark.createdAt === 'number' && Number.isFinite(bookmark.createdAt)
+              ? bookmark.createdAt
+              : Date.now(),
+        };
+
+        const idx = book.bookmarks.findIndex((b) => b.page === cleanPage);
         if (idx >= 0) {
-          book.bookmarks[idx] = bookmark;
+          book.bookmarks[idx] = cleanBookmark;
         } else {
-          book.bookmarks.push(bookmark);
+          book.bookmarks.push(cleanBookmark);
         }
         await safeSet(BOOKS_META_KEY, books);
       }
@@ -203,9 +243,13 @@ export class StorageService {
         books.push(book);
       }
       if (book && book.bookmarks) {
-        book.bookmarks = book.bookmarks.filter(
-          (b) => b.id !== bookmarkIdOrPage && b.page !== bookmarkIdOrPage
-        );
+        book.bookmarks = book.bookmarks.filter((b) => {
+          if (!b) return false;
+          if (b.id === bookmarkIdOrPage) return false;
+          if (typeof bookmarkIdOrPage === 'number' && b.page === bookmarkIdOrPage) return false;
+          if (typeof b.page !== 'number') return false; // Purge corrupt non-numeric bookmark pages
+          return true;
+        });
         await safeSet(BOOKS_META_KEY, books);
       }
     });

@@ -1,18 +1,51 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+
   * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
   
-  body {
+  html, body {
     margin: 0;
     padding: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
     overflow: hidden;
+    height: 100%;
+    width: 100%;
+    background-color: #121316;
   }
+}
+
+/* Safe area padding utilities */
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+.pb-safe-nav {
+  padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), 12px) + 72px);
+}
+
+/* Hide scrollbar for horizontal swipe chips on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom fonts */

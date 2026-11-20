@@ -46,12 +46,12 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
   const getMarginClass = () => {
     switch (typo.margin) {
       case 'narrow':
-        return 'max-w-4xl px-4 md:px-8';
+        return 'max-w-4xl px-2 sm:px-4 md:px-8';
       case 'wide':
-        return 'max-w-xl px-4 md:px-12';
+        return 'max-w-xl px-4 sm:px-8 md:px-12';
       case 'normal':
       default:
-        return 'max-w-2xl px-4 md:px-10';
+        return 'max-w-2xl px-3 sm:px-6 md:px-10';
     }
   };
 
@@ -63,7 +63,7 @@ export const ReflowReader: React.FC<ReflowReaderProps> = ({
   return (
     <div
       className={`relative w-full h-full flex flex-col items-center overflow-y-auto ${getThemeClass()} transition-colors duration-300 ${
-        isFocusMode ? 'py-4 px-4 sm:px-6' : 'pt-16 pb-20 px-4 sm:px-6'
+        isFocusMode ? 'py-4 px-3 sm:px-6' : 'pt-safe pb-safe-nav px-3 sm:px-6'
       }`}
       style={{
         filter: `brightness(${settings.brightness}%) contrast(${settings.contrast}%)`,

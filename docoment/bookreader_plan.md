@@ -20,6 +20,7 @@ flowchart LR
 
 > [!IMPORTANT]
 > **Điểm kỹ thuật quan trọng về định dạng PDF vs DOCX/EPUB/TXT:**
+>
 > - **File PDF** có bản chất là **Fixed-Layout** (bố cục cố định theo toạ độ điểm ảnh và font đã nhúng sẵn). Do đó, PDF mặc định sẽ không thể tự động đổi font hay cỡ chữ như file văn bản thông thường mà không phá vỡ cấu trúc trang.
 > - **File DOCX, EPUB, TXT, Markdown** là **Reflowable** (dòng chữ tự động chảy theo kích thước khung nhìn).
 
@@ -38,14 +39,14 @@ flowchart LR
 
 ### 3.1. Nhóm tính năng Cốt lõi (Theo yêu cầu)
 
-| STT | Tính năng | Chi tiết thực hiện |
-| :--- | :--- | :--- |
-| **1** | **Mở file từ máy** | Hỗ trợ kéo - thả (Drag & Drop) hoặc mở qua hộp thoại file. Hỗ trợ **PDF, DOCX, EPUB, TXT, MOBI, MD**. |
-| **2** | **Kệ sách & Thư viện (Library)** | Hiển thị danh sách sách đang đọc với bìa sách thực tế, thanh tiến độ %, ngày đọc gần nhất, gắn thẻ (Thể loại/Yêu thích). |
-| **3** | **Lưu tiến trình & Đọc tiếp** | Tự động ghi nhớ trang đang đọc đến từng mili-giây. Khi bấm vào sách trong thư viện, lập tức lật mở ngay đến đúng trang trước đó. |
+| STT   | Tính năng                        | Chi tiết thực hiện                                                                                                                                                                                                                                                                                                         |
+| :---- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Mở file từ máy**               | Hỗ trợ kéo - thả (Drag & Drop) hoặc mở qua hộp thoại file. Hỗ trợ **PDF, DOCX, EPUB, TXT, MOBI, MD**.                                                                                                                                                                                                                      |
+| **2** | **Kệ sách & Thư viện (Library)** | Hiển thị danh sách sách đang đọc với bìa sách thực tế, thanh tiến độ %, ngày đọc gần nhất, gắn thẻ (Thể loại/Yêu thích).                                                                                                                                                                                                   |
+| **3** | **Lưu tiến trình & Đọc tiếp**    | Tự động ghi nhớ trang đang đọc đến từng mili-giây. Khi bấm vào sách trong thư viện, lập tức lật mở ngay đến đúng trang trước đó.                                                                                                                                                                                           |
 | **4** | **Chế độ ánh sáng & Bảo vệ mắt** | 5 bộ theme màu giấy chuyên dụng: <br/>- **Paper White:** Trắng ngà tự nhiên.<br/>- **Sepia Classic:** Giấy vàng ấm phong cách sách cổ điển.<br/>- **Warm Amber:** Lọc ánh sáng xanh ban đêm.<br/>- **E-Ink Mode:** Đơn sắc xám dịu mắt như máy đọc sách Kindle.<br/>- **OLED Dark:** Nền đen mực sâu tiết kiệm năng lượng. |
-| **5** | **Giao diện Tối giản (Zen UI)** | Toàn màn hình (F11), tự động ẩn các thanh công cụ điều khiển khi người dùng đang đọc. Chỉ hiển thị lại khi rê chuột lên mép màn hình hoặc bấm phím tắt. |
-| **6** | **Tùy biến Typography** | Tuỳ chỉnh Font Family, Font Size (12px - 36px), Line Spacing (1.2 - 2.2), Page Margins, Text Alignment (căn đều 2 bên). |
+| **5** | **Giao diện Tối giản (Zen UI)**  | Toàn màn hình (F11), tự động ẩn các thanh công cụ điều khiển khi người dùng đang đọc. Chỉ hiển thị lại khi rê chuột lên mép màn hình hoặc bấm phím tắt.                                                                                                                                                                    |
+| **6** | **Tùy biến Typography**          | Tuỳ chỉnh Font Family, Font Size (12px - 36px), Line Spacing (1.2 - 2.2), Page Margins, Text Alignment (căn giữa).                                                                                                                                                                                                         |
 
 ---
 
@@ -117,21 +118,23 @@ flowchart LR
 ## 5. BẢN THẢO TRẢI NGHIỆM GIAO DIỆN (UI/UX CONCEPT)
 
 ### Màn hình 1: Kệ sách Thư viện (Library View)
+
 - Nền gam màu tối giản (Warm Gray / Cream).
 - Kệ sách hiển thị bìa 3D có độ dày gáy sách.
 - Thẻ thông tin dưới mỗi cuốn sách: Tên tác giả, Tên sách, Thanh tiến độ màu hổ phách (Ví dụ: `68% - Trang 142/208`), nút "Đọc tiếp".
 - Nút "Thêm sách mới" nổi bật kéo-thả file trực tiếp.
 
 ### Màn hình 2: Bàn đọc sách (Reading Workspace)
+
 - **Khu vực trung tâm:** Cuốn sách mở rộng với 2 trang bên cạnh nhau (hoặc 1 trang theo tuỳ chọn), có viền trang giấy hơi sần, rãnh gáy đổ bóng nhẹ.
 - **Thanh điều khiển Zen (Floating Bar):**
   - Tự động ẩn sau 3 giây không rê chuột.
   - Khi rê chuột lên đỉnh hoặc đáy màn hình, thanh mờ thủy tinh (Frosted Glass) hiện ra tinh tế:
-    - *Nút Mục lục (Outline)*
-    - *Bộ chọn Chế độ sáng (White / Sepia / Dark / E-ink)*
-    - *Bật/Tắt chế độ 2 trang / 1 trang*
-    - *Menu Typography (Đổi font chữ, cỡ chữ, dãn dòng)*
-    - *Nút Toàn màn hình (Zen Fullscreen)*
+    - _Nút Mục lục (Outline)_
+    - _Bộ chọn Chế độ sáng (White / Sepia / Dark / E-ink)_
+    - _Bật/Tắt chế độ 2 trang / 1 trang_
+    - _Menu Typography (Đổi font chữ, cỡ chữ, dãn dòng)_
+    - _Nút Toàn màn hình (Zen Fullscreen)_
 - **Thanh tiến trình đọc dưới đáy:**
   - Hiển thị thanh trượt mảnh, số trang hiện tại / tổng trang, ước lượng thời gian còn lại của chương.
 

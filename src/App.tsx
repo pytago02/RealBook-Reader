@@ -13,11 +13,13 @@ import { ZenToolbar } from './components/ZenToolbar';
 import { EyeComfortControl } from './components/EyeComfortControl';
 import { TypographyControl } from './components/TypographyControl';
 import { TocAndBookmarksModal } from './components/TocAndBookmarksModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2, EyeOff } from 'lucide-react';
 import { freeBooksApi, type OnlineBook } from './services/freeBooksApi';
 import { inferGenre } from './utils/genre';
 import { ToastContainer, type ToastMessage } from './components/Toast';
 import { getTranslation } from './i18n';
+import { setupNativeStatusBar, registerBackButtonHandler } from './utils/mobile';
 
 export const App: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -80,6 +82,7 @@ export const App: React.FC = () => {
   // Load books & settings on startup
   useEffect(() => {
     const init = async () => {
+      setupNativeStatusBar();
       const [savedBooks, savedSettings] = await Promise.all([
         storageService.getBooks(),
         storageService.getSettings(),
@@ -460,17 +463,42 @@ export const App: React.FC = () => {
   };
 
   // Bookmark toggle: supports explicit targetPage or current visible spread
-  const handleToggleBookmark = (targetPage?: number) => {
+  const handleToggleBookmark = (targetPage?: unknown) => {
     if (!currentBook) return;
-    const curPage =
-      targetPage !== undefined
-        ? targetPage
-        : currentBook.currentPage;
+
+    // Strictly validate targetPage to ensure no MouseEvent or invalid object ever passes as page number
+    const isDouble = settings.pageSpread === 'double';
+    const leftPage = isDouble
+      ? currentBook.currentPage % 2 === 0
+        ? currentBook.currentPage - 1
+        : currentBook.currentPage
+      : currentBook.currentPage;
+
+    let curPage: number;
+    if (typeof targetPage === 'number' && Number.isFinite(targetPage)) {
+      curPage = Math.max(1, Math.min(Math.round(targetPage), currentBook.totalPages));
+    } else {
+      // In double mode: if toolbar toggle is clicked without explicit page parameter,
+      // toggle the left page or right page if one of them is already bookmarked
+      const hasLeftBm = (currentBook.bookmarks || []).some((b) => b.page === leftPage);
+      const hasRightBm = (currentBook.bookmarks || []).some((b) => b.page === leftPage + 1);
+
+      if (hasLeftBm) {
+        curPage = leftPage;
+      } else if (hasRightBm) {
+        curPage = leftPage + 1;
+      } else {
+        curPage = currentBook.currentPage;
+      }
+    }
+
     const existing = (currentBook.bookmarks || []).find((b) => b.page === curPage);
 
     if (existing) {
       storageService.removeBookmark(currentBook.id, existing.id);
-      const updatedBookmarks = (currentBook.bookmarks || []).filter((b) => b.id !== existing.id);
+      const updatedBookmarks = (currentBook.bookmarks || []).filter(
+        (b) => b.id !== existing.id && b.page !== curPage
+      );
       setCurrentBook((prev) => (prev ? { ...prev, bookmarks: updatedBookmarks } : null));
       setBooks((prevBooks) =>
         prevBooks.map((b) => (b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b))
@@ -562,6 +590,40 @@ export const App: React.FC = () => {
     setToc([]);
   };
 
+  // Hardware Back Button integration for Android & Mobile
+  useEffect(() => {
+    return registerBackButtonHandler(() => {
+      if (isTocModalOpen) {
+        setIsTocModalOpen(false);
+        return true;
+      }
+      if (isThemeModalOpen) {
+        setIsThemeModalOpen(false);
+        return true;
+      }
+      if (isTypoModalOpen) {
+        setIsTypoModalOpen(false);
+        return true;
+      }
+      if (isFocusMode) {
+        setIsFocusMode(false);
+        return true;
+      }
+      if (currentBook) {
+        handleBackToLibrary();
+        return true;
+      }
+      return false;
+    });
+  }, [
+    isTocModalOpen,
+    isThemeModalOpen,
+    isTypoModalOpen,
+    isFocusMode,
+    currentBook,
+    handleBackToLibrary,
+  ]);
+
   const isDoubleSpread = settings.pageSpread === 'double';
   const spreadLeftPage = currentBook
     ? isDoubleSpread
@@ -609,15 +671,14 @@ export const App: React.FC = () => {
       ) : (
         /* Reading Screen */
         <div className="relative w-full h-full flex flex-col items-center justify-center">
-          {/* Floating Focus Mode Exit Pill */}
+          {/* Floating Focus Mode Exit Button (Icon Only) */}
           {isFocusMode && (
             <button
               onClick={() => setIsFocusMode(false)}
-              className="fixed top-3 right-5 z-50 px-3.5 py-1.5 rounded-full bg-black/75 hover:bg-black/95 text-white/80 hover:text-white backdrop-blur-md border border-white/20 text-xs font-medium flex items-center gap-1.5 transition-all opacity-25 hover:opacity-100 shadow-2xl cursor-pointer"
+              className="fixed top-3 right-4 z-50 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-black/90 text-white/80 hover:text-white backdrop-blur-md border border-white/15 transition-all opacity-30 hover:opacity-100 active:scale-95 shadow-xl cursor-pointer"
               title={getTranslation(settings.language || 'vi').reader.exitFocusMode}
             >
-              <EyeOff className="w-3.5 h-3.5 text-amber-400" />
-              <span>{getTranslation(settings.language || 'vi').reader.exitFocusMode}</span>
+              <EyeOff className="w-4 h-4 text-amber-400" />
             </button>
           )}
 
@@ -686,33 +747,35 @@ export const App: React.FC = () => {
 
           {/* Reader Body */}
           <div className="w-full h-full">
-            {settings.viewerMode === 'reflow' && textPages ? (
-              <ReflowReader
-                book={currentBook}
-                currentPage={currentBook.currentPage}
-                totalPages={currentBook.totalPages}
-                textPages={textPages}
-                settings={settings}
-                isBookmarked={isCurrentPageBookmarked}
-                isFocusMode={isFocusMode}
-                onPageChange={handlePageChange}
-                onToggleBookmark={handleToggleBookmark}
-              />
-            ) : (
-              <RealisticBook
-                book={currentBook}
-                currentPage={currentBook.currentPage}
-                totalPages={currentBook.totalPages}
-                settings={settings}
-                pdfDoc={pdfDoc}
-                textPages={textPages}
-                isBookmarked={isCurrentPageBookmarked}
-                isFocusMode={isFocusMode}
-                onPageChange={handlePageChange}
-                onExtractPage={handleExtractPage}
-                onToggleBookmark={handleToggleBookmark}
-              />
-            )}
+            <ErrorBoundary fallbackTitle="Lỗi hiển thị nội dung sách">
+              {settings.viewerMode === 'reflow' && textPages ? (
+                <ReflowReader
+                  book={currentBook}
+                  currentPage={currentBook.currentPage}
+                  totalPages={currentBook.totalPages}
+                  textPages={textPages}
+                  settings={settings}
+                  isBookmarked={isCurrentPageBookmarked}
+                  isFocusMode={isFocusMode}
+                  onPageChange={handlePageChange}
+                  onToggleBookmark={handleToggleBookmark}
+                />
+              ) : (
+                <RealisticBook
+                  book={currentBook}
+                  currentPage={currentBook.currentPage}
+                  totalPages={currentBook.totalPages}
+                  settings={settings}
+                  pdfDoc={pdfDoc}
+                  textPages={textPages}
+                  isBookmarked={isCurrentPageBookmarked}
+                  isFocusMode={isFocusMode}
+                  onPageChange={handlePageChange}
+                  onExtractPage={handleExtractPage}
+                  onToggleBookmark={handleToggleBookmark}
+                />
+              )}
+            </ErrorBoundary>
           </div>
 
           {/* Modals */}
@@ -730,27 +793,29 @@ export const App: React.FC = () => {
             onUpdateTypography={handleUpdateTypography}
           />
 
-          <TocAndBookmarksModal
-            isOpen={isTocModalOpen}
-            onClose={() => setIsTocModalOpen(false)}
-            language={settings.language || 'vi'}
-            toc={toc}
-            bookmarks={currentBook.bookmarks || []}
-            currentPage={currentBook.currentPage}
-            onSelectPage={handlePageChange}
-            onDeleteBookmark={(bmId) => {
-              storageService.removeBookmark(currentBook.id, bmId);
-              const updatedBookmarks = (currentBook.bookmarks || []).filter((b) => b.id !== bmId);
-              setCurrentBook((prev) =>
-                prev ? { ...prev, bookmarks: updatedBookmarks } : null
-              );
-              setBooks((prevBooks) =>
-                prevBooks.map((b) =>
-                  b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b
-                )
-              );
-            }}
-          />
+          <ErrorBoundary fallbackTitle="Lỗi hiển thị mục lục và dấu trang">
+            <TocAndBookmarksModal
+              isOpen={isTocModalOpen}
+              onClose={() => setIsTocModalOpen(false)}
+              language={settings.language || 'vi'}
+              toc={toc}
+              bookmarks={currentBook.bookmarks || []}
+              currentPage={currentBook.currentPage}
+              onSelectPage={handlePageChange}
+              onDeleteBookmark={(bmId) => {
+                storageService.removeBookmark(currentBook.id, bmId);
+                const updatedBookmarks = (currentBook.bookmarks || []).filter((b) => b.id !== bmId);
+                setCurrentBook((prev) =>
+                  prev ? { ...prev, bookmarks: updatedBookmarks } : null
+                );
+                setBooks((prevBooks) =>
+                  prevBooks.map((b) =>
+                    b.id === currentBook.id ? { ...b, bookmarks: updatedBookmarks } : b
+                  )
+                );
+              }}
+            />
+          </ErrorBoundary>
         </div>
       )}
 
