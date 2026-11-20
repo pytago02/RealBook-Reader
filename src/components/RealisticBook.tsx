@@ -3,7 +3,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 import type { Book, ReaderSettings } from '../types';
 import { soundService } from '../services/sound';
 import { ChevronLeft, ChevronRight, Bookmark } from 'lucide-react';
-import { triggerHaptic } from '../utils/mobile';
 
 interface RealisticBookProps {
   book: Book;
@@ -95,7 +94,6 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       if (direction === 'prev' && currentPage <= 1) return;
       if (isSliding) return; // Prevent double trigger during transition
 
-      triggerHaptic('light');
       if (settings.soundEnabled) {
         soundService.playPageTurn(settings.soundVolume);
       }
