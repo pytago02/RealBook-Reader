@@ -2,9 +2,10 @@ import type { Book } from '../types';
 import { txtParser } from './parsers/txtParser';
 import { storageService } from './storage';
 import { CURATED_VIETNAMESE_BOOKS } from './curatedVietnameseBooks';
+import { CURATED_ONLINE_COMICS } from './curatedComics';
 import { inferGenre } from '../utils/genre';
 
-export { CURATED_VIETNAMESE_BOOKS };
+export { CURATED_VIETNAMESE_BOOKS, CURATED_ONLINE_COMICS };
 
 export interface OnlineBook {
   id: string;
@@ -15,11 +16,14 @@ export interface OnlineBook {
   downloadCount?: number;
   subjects?: string[];
   description?: string;
-  source: 'archive' | 'gutenberg' | 'openlibrary';
+  source: 'archive' | 'gutenberg' | 'openlibrary' | 'curated';
   downloadUrl?: string;
   archiveId?: string;
   year?: number | string;
   genre?: string;
+  format?: 'pdf' | 'docx' | 'epub' | 'txt' | 'cbz';
+  isComic?: boolean;
+  comicPages?: string[];
 }
 
 export interface GutendexBook {
@@ -86,6 +90,17 @@ export class FreeBooksApiService {
       const bookList: OnlineBook[] = [];
       let totalCount = 0;
       let hasMoreResults = false;
+
+      // Prepend curated comics for instant discovery in Comic category
+      if ((topic === 'comic' || topic === 'truyen_tranh') && page === 1 && sourceFilter !== 'gutenberg') {
+        const matchingCurated = CURATED_ONLINE_COMICS.filter((c) => {
+          if (!cleanQuery) return true;
+          const searchIn = `${c.title} ${c.author} ${(c.subjects || []).join(' ')}`.toLowerCase();
+          return searchIn.includes(cleanQuery.toLowerCase());
+        });
+        bookList.unshift(...matchingCurated);
+        totalCount += matchingCurated.length;
+      }
 
       // 1. SPECIFIC SOURCE SEARCH: User chose a specific repository filter
       if (sourceFilter === 'archive') {
@@ -260,6 +275,11 @@ export class FreeBooksApiService {
           topicConstraint =
             '((title:("thơ" OR "thi tập" OR "tập thơ" OR "ca dao" OR "thơ ca" OR "lục bát") AND NOT title:("hơi thở" OR "thỏ")) OR subject:("thơ" OR "poetry"))';
           break;
+        case 'comic':
+        case 'truyen_tranh':
+          topicConstraint =
+            '((title:("truyện tranh" OR "manga" OR "comic" OR "hoạt họa" OR "doraemon" OR "conan") OR subject:("truyện tranh" OR "comic" OR "manga")) OR collection:(comics OR comic_books))';
+          break;
         case 'recommended':
         case 'all':
         default:
@@ -292,6 +312,10 @@ export class FreeBooksApiService {
           break;
         case 'poetry':
           topicConstraint = '(title:(poetry OR poems OR verse OR 诗 OR poesie OR poesia) OR subject:(poetry))';
+          break;
+        case 'comic':
+        case 'truyen_tranh':
+          topicConstraint = '(collection:(comics OR comic_books OR comicbooks) OR mediatype:(texts) AND (subject:(comic OR comics OR manga OR manhwa) OR title:(comic OR comics OR manga)))';
           break;
         case 'recommended':
         case 'all':
@@ -407,6 +431,8 @@ export class FreeBooksApiService {
         adventure: 'adventure',
         psychology: 'psychology',
         poetry: 'poetry',
+        comic: 'Comics (Bookshelf)',
+        truyen_tranh: 'Comics (Bookshelf)',
       };
 
       if (query) {
@@ -571,6 +597,96 @@ export class FreeBooksApiService {
    * Download online book dynamically from the internet API and convert into offline RealBook format
    */
   async downloadAndImportBook(onlineBook: OnlineBook): Promise<{ book: Book; pages: string[] }> {
+    const isComicBook =
+      onlineBook.isComic ||
+      onlineBook.format === 'cbz' ||
+      onlineBook.genre === 'Truyện tranh & Manga' ||
+      /comic|manga/i.test(`${onlineBook.title} ${(onlineBook.subjects || []).join(' ')}`);
+
+    if (isComicBook) {
+      let comicPages: string[] = [];
+
+      // 1. Curated comic pages
+      if (onlineBook.comicPages && onlineBook.comicPages.length > 0) {
+        comicPages = [...onlineBook.comicPages];
+      } else {
+        const archiveId = onlineBook.archiveId || (onlineBook.source === 'archive' ? onlineBook.id.replace('ia-', '') : null);
+        if (archiveId) {
+          try {
+            const metaRes = await fetch(`https://archive.org/metadata/${encodeURIComponent(archiveId)}/files`);
+            if (metaRes.ok) {
+              const meta = await metaRes.json();
+              const files = (meta.result || []) as { name: string; format?: string }[];
+              const imgFiles = files.filter(
+                (f) =>
+                  /\.(jpe?g|png|webp)$/i.test(f.name) &&
+                  !f.name.includes('_thumb') &&
+                  !f.name.includes('_itemimage') &&
+                  !f.name.startsWith('.') &&
+                  !f.name.includes('__MACOSX')
+              );
+
+              if (imgFiles.length > 0) {
+                imgFiles.sort((a, b) =>
+                  a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+                );
+                // First 60 pages for fast snappy loading
+                comicPages = imgFiles.slice(0, 60).map(
+                  (f) =>
+                    `https://archive.org/download/${encodeURIComponent(archiveId)}/${encodeURIComponent(f.name)}`
+                );
+              }
+            }
+          } catch (err) {
+            console.warn('Could not fetch comic pages from Internet Archive:', err);
+          }
+        }
+      }
+
+      if (comicPages.length === 0) {
+        const cover = onlineBook.coverUrl || 'https://archive.org/services/img/comics';
+        comicPages = [
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1150" width="100%" height="100%">
+            <rect width="800" height="1150" fill="#090d16" />
+            <rect x="40" y="40" width="720" height="1070" rx="16" fill="#131722" stroke="#f59e0b" stroke-width="3" />
+            <text x="400" y="100" fill="#f59e0b" font-family="'Be Vietnam Pro', sans-serif" font-weight="900" font-size="28" text-anchor="middle">REALBOOK COMICS ONLINE</text>
+            <text x="400" y="170" fill="#ffffff" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="32" text-anchor="middle">${onlineBook.title.replace(/["<>]/g, '')}</text>
+            <text x="400" y="210" fill="#94a3b8" font-family="'Be Vietnam Pro', sans-serif" font-weight="600" font-size="18" text-anchor="middle">Tác giả: ${(onlineBook.author || 'Truyện tranh').replace(/["<>]/g, '')}</text>
+            <image href="${cover}" x="150" y="260" width="500" height="600" preserveAspectRatio="xMidYMid meet" />
+            <rect x="80" y="900" width="640" height="150" rx="12" fill="#090d16" stroke="#334155" stroke-width="2" />
+            <text x="400" y="945" fill="#fef08a" font-family="'Be Vietnam Pro', sans-serif" font-weight="800" font-size="18" text-anchor="middle">TRUYỆN TRANH TRỰC TUYẾN</text>
+            <text x="400" y="980" fill="#e2e8f0" font-family="'Be Vietnam Pro', sans-serif" font-weight="500" font-size="14" text-anchor="middle">Bộ truyện đã được lưu vào kệ sách ngoại tuyến.</text>
+            <text x="400" y="1010" fill="#94a3b8" font-family="'Be Vietnam Pro', sans-serif" font-weight="500" font-size="13" text-anchor="middle">Bạn có thể lật trang hoặc chuyển sang chế độ Cuộn Webtoon để đọc.</text>
+          </svg>`
+        ];
+      }
+
+      const now = Date.now();
+      const newBook: Book = {
+        id: `downloaded-${onlineBook.id}-${now}`,
+        title: onlineBook.title,
+        author: onlineBook.author,
+        genre: 'Truyện tranh & Manga',
+        format: 'cbz',
+        isComic: true,
+        totalPages: comicPages.length,
+        currentPage: 1,
+        coverUrl: onlineBook.coverUrl || comicPages[0],
+        fileSize: comicPages.length * 150000,
+        lastReadAt: now,
+        addedAt: now,
+        bookmarks: [],
+        highlights: [],
+        readingTimeSeconds: 0,
+        tags: onlineBook.subjects || ['Truyện tranh', 'Manga'],
+      };
+
+      await storageService.saveBookMeta(newBook);
+      await storageService.saveBookData(newBook.id, JSON.stringify(comicPages));
+
+      return { book: newBook, pages: comicPages };
+    }
+
     let rawText = '';
 
     // 1. If book is from Internet Archive (or Open Library backed by IA)

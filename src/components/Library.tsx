@@ -177,7 +177,7 @@ export const Library: React.FC<LibraryProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       // Reset input value so selecting the exact same file again will always trigger onChange
-      e.target.value = '';
+      e.target.value = "";
       onImportFile(file);
     }
   };
@@ -366,6 +366,7 @@ export const Library: React.FC<LibraryProps> = ({
           ? "Văn học & Tinh hoa Việt Nam"
           : t.online.categories.vietnamese,
     },
+    { id: "comic", label: t.online.categories.comic },
     { id: "recommended", label: t.online.categories.recommended },
     { id: "world_classics", label: t.online.categories.world_classics },
     { id: "all", label: t.online.categories.all },
@@ -810,9 +811,10 @@ export const Library: React.FC<LibraryProps> = ({
                 <button
                   onClick={onLoadSample}
                   className="px-4 py-2 rounded-xl border border-gray-700 bg-[#2b2c37] hover:bg-[#343542] text-xs font-semibold text-gray-200 transition-all flex items-center gap-2"
+                  title="Mở đọc sách mẫu Hoàng Tử Bé"
                 >
                   <BookOpen className="w-4 h-4 text-amber-400" />
-                  {t.shelf.demoSample}
+                  Sách chữ mẫu
                 </button>
                 {onLoadComicSample && (
                   <button
@@ -890,8 +892,8 @@ export const Library: React.FC<LibraryProps> = ({
                             isActive
                               ? "bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20"
                               : count > 0
-                              ? "text-gray-300 hover:text-white hover:bg-[#23242e]"
-                              : "text-gray-500 hover:text-gray-300 hover:bg-[#23242e]/50 opacity-60"
+                                ? "text-gray-300 hover:text-white hover:bg-[#23242e]"
+                                : "text-gray-500 hover:text-gray-300 hover:bg-[#23242e]/50 opacity-60"
                           }`}
                         >
                           <span className="truncate">{genreItem.label}</span>
@@ -906,7 +908,9 @@ export const Library: React.FC<LibraryProps> = ({
                               {count}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono text-gray-600">0</span>
+                            <span className="text-[10px] font-mono text-gray-600">
+                              0
+                            </span>
                           )}
                         </button>
                       );
@@ -947,14 +951,20 @@ export const Library: React.FC<LibraryProps> = ({
                             ? "bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25"
                             : "bg-[#22232c] text-gray-300 border-gray-700/60 hover:text-white hover:bg-[#2b2c37]"
                         }`}
-                        title={showShelfFilter ? "Ẩn bộ lọc thể loại" : "Hiện bộ lọc thể loại"}
+                        title={
+                          showShelfFilter
+                            ? "Ẩn bộ lọc thể loại"
+                            : "Hiện bộ lọc thể loại"
+                        }
                       >
                         {showShelfFilter ? (
                           <PanelLeftClose className="w-3.5 h-3.5 text-amber-400" />
                         ) : (
                           <PanelLeftOpen className="w-3.5 h-3.5 text-amber-400" />
                         )}
-                        <span>{showShelfFilter ? "Ẩn bộ lọc" : "Hiện bộ lọc"}</span>
+                        <span>
+                          {showShelfFilter ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+                        </span>
                       </button>
 
                       <div className="h-4 w-[1px] bg-gray-800 hidden sm:block" />
@@ -963,10 +973,13 @@ export const Library: React.FC<LibraryProps> = ({
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0 animate-pulse" />
                         <div className="min-w-0">
                           <h2 className="text-xs sm:text-sm font-bold text-gray-100 truncate flex items-center gap-2">
-                            {shelfGenreFilter === "all" ? "Tất cả thể loại" : shelfGenreFilter}
+                            {shelfGenreFilter === "all"
+                              ? "Tất cả thể loại"
+                              : shelfGenreFilter}
                           </h2>
                           <p className="text-[10px] sm:text-[11px] text-gray-400 font-mono truncate">
-                            {filteredPersonalBooks.length} / {books.length} cuốn sách
+                            {filteredPersonalBooks.length} / {books.length} cuốn
+                            sách
                           </p>
                         </div>
                       </div>
@@ -1029,211 +1042,227 @@ export const Library: React.FC<LibraryProps> = ({
                         : "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
                     }`}
                   >
-                {filteredPersonalBooks.map((book) => {
-                  const percent =
-                    book.totalPages > 0
-                      ? Math.round((book.currentPage / book.totalPages) * 100)
-                      : 0;
-                  const currentGenre = book.genre || inferGenre(book.title);
+                    {filteredPersonalBooks.map((book) => {
+                      const percent =
+                        book.totalPages > 0
+                          ? Math.round(
+                              (book.currentPage / book.totalPages) * 100,
+                            )
+                          : 0;
+                      const currentGenre = book.genre || inferGenre(book.title);
 
-                  return (
-                    <div
-                      key={book.id}
-                      onClick={() => onOpenBook(book)}
-                      className="group relative bg-[#1c1d23] hover:bg-[#22232b] border border-gray-800/80 hover:border-amber-500/40 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 cursor-pointer flex flex-col justify-between"
-                    >
-                      {/* Book Cover Container */}
-                      <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-[#2a2b36] to-[#1e1f27] border border-gray-700/50 shadow-md flex flex-col justify-between p-4 group-hover:scale-[1.02] transition-transform duration-300">
-                        {/* Realistic Book Spine Effect */}
-                        <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
+                      return (
+                        <div
+                          key={book.id}
+                          onClick={() => onOpenBook(book)}
+                          className="group relative bg-[#1c1d23] hover:bg-[#22232b] border border-gray-800/80 hover:border-amber-500/40 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 cursor-pointer flex flex-col justify-between"
+                        >
+                          {/* Book Cover Container */}
+                          <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-[#2a2b36] to-[#1e1f27] border border-gray-700/50 shadow-md flex flex-col justify-between p-4 group-hover:scale-[1.02] transition-transform duration-300">
+                            {/* Realistic Book Spine Effect */}
+                            <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/40 via-black/10 to-transparent pointer-events-none" />
 
-                        {book.coverUrl ? (
-                          <>
-                            <img
-                              src={book.coverUrl}
-                              alt={book.title}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                            {/* Badges Overlay for Cover */}
-                            <div className="relative z-10 flex justify-between items-start gap-1 w-full pointer-events-none">
-                              <span className="uppercase text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md bg-black/60 text-amber-400 border border-amber-500/20 backdrop-blur-sm">
-                                {book.format}
+                            {book.coverUrl ? (
+                              <>
+                                <img
+                                  src={book.coverUrl}
+                                  alt={book.title}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                {/* Badges Overlay for Cover */}
+                                <div className="relative z-10 flex justify-between items-start gap-1 w-full pointer-events-none">
+                                  <span className="uppercase text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md bg-black/60 text-amber-400 border border-amber-500/20 backdrop-blur-sm">
+                                    {book.format}
+                                  </span>
+                                  <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-black/60 text-amber-300 border border-amber-500/20 truncate max-w-[120px] backdrop-blur-sm">
+                                    {currentGenre}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="h-full flex flex-col justify-between z-10">
+                                {/* Format & Genre Badges */}
+                                <div className="flex justify-between items-start gap-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="uppercase text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md bg-black/40 text-amber-400 border border-amber-500/20">
+                                      {book.format}
+                                    </span>
+                                    <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/20 truncate max-w-[110px]">
+                                      {currentGenre}
+                                    </span>
+                                  </div>
+                                  {book.bookmarks &&
+                                    book.bookmarks.length > 0 && (
+                                      <span className="text-amber-400 p-1 bg-black/40 rounded-md">
+                                        <Bookmark className="w-3.5 h-3.5 fill-current" />
+                                      </span>
+                                    )}
+                                </div>
+
+                                {/* Typographic Title */}
+                                <div className="my-auto text-center px-2">
+                                  <h4 className="font-serif font-bold text-white text-base leading-snug line-clamp-3">
+                                    {book.title}
+                                  </h4>
+                                  <p className="text-xs text-amber-200/70 mt-2 font-serif italic truncate">
+                                    {book.author || t.shelf.unknownAuthor}
+                                  </p>
+                                </div>
+
+                                <div className="text-[10px] text-gray-400 font-mono text-center">
+                                  {t.shelf.pagesCount.replace(
+                                    "{count}",
+                                    String(book.totalPages),
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Metadata & Progress */}
+                          <div>
+                            <h3 className="font-semibold text-sm text-gray-100 line-clamp-1 group-hover:text-amber-400 transition-colors">
+                              {book.title}
+                            </h3>
+                            <div className="flex items-center justify-between text-xs text-gray-400 mt-0.5">
+                              <span className="truncate">
+                                {book.author || t.shelf.unknownAuthor}
                               </span>
-                              <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-black/60 text-amber-300 border border-amber-500/20 truncate max-w-[120px] backdrop-blur-sm">
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#252632] text-gray-400 flex-shrink-0">
                                 {currentGenre}
                               </span>
                             </div>
-                          </>
-                        ) : (
-                          <div className="h-full flex flex-col justify-between z-10">
-                            {/* Format & Genre Badges */}
-                            <div className="flex justify-between items-start gap-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="uppercase text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 rounded-md bg-black/40 text-amber-400 border border-amber-500/20">
-                                  {book.format}
+
+                            {/* Progress Bar */}
+                            <div className="mt-3">
+                              <div className="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
+                                <span>
+                                  {t.shelf.pageProgress
+                                    .replace(
+                                      "{current}",
+                                      String(book.currentPage),
+                                    )
+                                    .replace(
+                                      "{total}",
+                                      String(book.totalPages),
+                                    )}
                                 </span>
-                                <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/20 truncate max-w-[110px]">
-                                  {currentGenre}
+                                <span className="text-amber-400 font-semibold">
+                                  {percent}%
                                 </span>
                               </div>
-                              {book.bookmarks && book.bookmarks.length > 0 && (
-                                <span className="text-amber-400 p-1 bg-black/40 rounded-md">
-                                  <Bookmark className="w-3.5 h-3.5 fill-current" />
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Typographic Title */}
-                            <div className="my-auto text-center px-2">
-                              <h4 className="font-serif font-bold text-white text-base leading-snug line-clamp-3">
-                                {book.title}
-                              </h4>
-                              <p className="text-xs text-amber-200/70 mt-2 font-serif italic truncate">
-                                {book.author || t.shelf.unknownAuthor}
-                              </p>
-                            </div>
-
-                            <div className="text-[10px] text-gray-400 font-mono text-center">
-                              {t.shelf.pagesCount.replace(
-                                "{count}",
-                                String(book.totalPages),
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Metadata & Progress */}
-                      <div>
-                        <h3 className="font-semibold text-sm text-gray-100 line-clamp-1 group-hover:text-amber-400 transition-colors">
-                          {book.title}
-                        </h3>
-                        <div className="flex items-center justify-between text-xs text-gray-400 mt-0.5">
-                          <span className="truncate">
-                            {book.author || t.shelf.unknownAuthor}
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#252632] text-gray-400 flex-shrink-0">
-                            {currentGenre}
-                          </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="mt-3">
-                          <div className="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
-                            <span>
-                              {t.shelf.pageProgress
-                                .replace("{current}", String(book.currentPage))
-                                .replace("{total}", String(book.totalPages))}
-                            </span>
-                            <span className="text-amber-400 font-semibold">
-                              {percent}%
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Bottom action row */}
-                        <div className="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 truncate max-w-[65%]">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">
-                              {new Date(book.lastReadAt).toLocaleDateString(
-                                currentLanguage === "vi" ? "vi-VN" : "en-US",
-                              )}
-                            </span>
-                            {book.readingTimeSeconds &&
-                            book.readingTimeSeconds >= 60 ? (
-                              <span className="text-amber-500/80 flex-shrink-0 font-mono">
-                                • {Math.round(book.readingTimeSeconds / 60)}{" "}
-                                {currentLanguage === "vi" ? "phút" : "mins"}
-                              </span>
-                            ) : null}
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {/* Bookmark indicator badge */}
-                            {book.bookmarks && book.bookmarks.length > 0 && (
-                              <span
-                                className="text-[10px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded flex items-center gap-0.5"
-                                title={`${book.bookmarks.length} ${currentLanguage === "vi" ? "dấu trang" : "bookmarks"}`}
-                              >
-                                <Bookmark className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                                <span>{book.bookmarks.length}</span>
-                              </span>
-                            )}
-                            {/* Genre Changer Dropdown */}
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingGenreBookId(
-                                    editingGenreBookId === book.id
-                                      ? null
-                                      : book.id,
-                                  );
-                                }}
-                                className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-                                title="Đổi thể loại sách"
-                              >
-                                <Tag className="w-3.5 h-3.5" />
-                              </button>
-
-                              {editingGenreBookId === book.id && (
+                              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                                 <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="absolute bottom-full right-0 mb-2 w-52 bg-[#1e1f26] border border-gray-700/80 rounded-xl shadow-2xl py-1.5 z-40 animate-fade-in backdrop-blur-md"
-                                >
-                                  <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border-b border-gray-700/50 mb-1">
-                                    Đổi thể loại sách
-                                  </div>
-                                  {GENRE_LIST.map((g) => {
-                                    const isCurrent = currentGenre === g.label;
-                                    return (
-                                      <button
-                                        key={g.id}
-                                        onClick={() => {
-                                          if (onUpdateBookGenre)
-                                            onUpdateBookGenre(book.id, g.label);
-                                          setEditingGenreBookId(null);
-                                        }}
-                                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[#2b2c37] ${
-                                          isCurrent
-                                            ? "text-amber-400 font-bold bg-amber-500/10"
-                                            : "text-gray-300"
-                                        }`}
-                                      >
-                                        {g.label}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                                  className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
                             </div>
 
-                            {/* Delete Button - Triggers Synchronized ConfirmModal */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setBookToDelete(book);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
-                              title={t.shelf.deleteTooltip}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Bottom action row */}
+                            <div className="mt-3 pt-3 border-t border-gray-800/80 flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 truncate max-w-[65%]">
+                                <Clock className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {new Date(book.lastReadAt).toLocaleDateString(
+                                    currentLanguage === "vi"
+                                      ? "vi-VN"
+                                      : "en-US",
+                                  )}
+                                </span>
+                                {book.readingTimeSeconds &&
+                                book.readingTimeSeconds >= 60 ? (
+                                  <span className="text-amber-500/80 flex-shrink-0 font-mono">
+                                    • {Math.round(book.readingTimeSeconds / 60)}{" "}
+                                    {currentLanguage === "vi" ? "phút" : "mins"}
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                {/* Bookmark indicator badge */}
+                                {book.bookmarks &&
+                                  book.bookmarks.length > 0 && (
+                                    <span
+                                      className="text-[10px] text-amber-400 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.5 rounded flex items-center gap-0.5"
+                                      title={`${book.bookmarks.length} ${currentLanguage === "vi" ? "dấu trang" : "bookmarks"}`}
+                                    >
+                                      <Bookmark className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                                      <span>{book.bookmarks.length}</span>
+                                    </span>
+                                  )}
+                                {/* Genre Changer Dropdown */}
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingGenreBookId(
+                                        editingGenreBookId === book.id
+                                          ? null
+                                          : book.id,
+                                      );
+                                    }}
+                                    className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-lg transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                                    title="Đổi thể loại sách"
+                                  >
+                                    <Tag className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {editingGenreBookId === book.id && (
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="absolute bottom-full right-0 mb-2 w-52 bg-[#1e1f26] border border-gray-700/80 rounded-xl shadow-2xl py-1.5 z-40 animate-fade-in backdrop-blur-md"
+                                    >
+                                      <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border-b border-gray-700/50 mb-1">
+                                        Đổi thể loại sách
+                                      </div>
+                                      {GENRE_LIST.map((g) => {
+                                        const isCurrent =
+                                          currentGenre === g.label;
+                                        return (
+                                          <button
+                                            key={g.id}
+                                            onClick={() => {
+                                              if (onUpdateBookGenre)
+                                                onUpdateBookGenre(
+                                                  book.id,
+                                                  g.label,
+                                                );
+                                              setEditingGenreBookId(null);
+                                            }}
+                                            className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[#2b2c37] ${
+                                              isCurrent
+                                                ? "text-amber-400 font-bold bg-amber-500/10"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            {g.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Delete Button - Triggers Synchronized ConfirmModal */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBookToDelete(book);
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                                  title={t.shelf.deleteTooltip}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             </div>
           </div>
@@ -1268,169 +1297,58 @@ export const Library: React.FC<LibraryProps> = ({
                   </div>
                 </div>
 
-              {/* Book Language Quick Filter Strip */}
-              <div className="mb-4 px-2">
-                <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block mb-1.5">
-                  {t.online.languageFilterLabel}
-                </label>
-                <div className="grid grid-cols-3 gap-1">
-                  {SUPPORTED_LANGUAGES.map((langItem) => {
-                    const isLangActive = onlineBookLang === langItem.code;
-                    return (
-                      <button
-                        key={langItem.code}
-                        onClick={() => {
-                          if (onlineBookLang === langItem.code) return;
-                          activeReqIdRef.current++;
-                          setOnlineBooks([]);
-                          setOnlineBookLang(langItem.code);
-                          if (langItem.code === "vi") {
-                            setOnlineTopic("vietnamese");
-                          } else {
-                            setOnlineTopic("recommended");
-                          }
-                          setActiveSearchQuery("");
-                          setHeaderOnlineSearchInput("");
-                          setTabCategorySearchInput("");
-                          setActiveSearchScope("category");
-                          if (scrollContainerRef.current) {
-                            scrollContainerRef.current.scrollTo({
-                              top: 0,
-                              behavior: "instant",
-                            });
-                          }
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all text-center flex items-center justify-center gap-1 ${
-                          isLangActive
-                            ? "bg-emerald-500 text-black font-bold shadow-sm"
-                            : "bg-[#23242e] text-gray-400 hover:text-white hover:bg-[#2b2c37]"
-                        }`}
-                      >
-                        <span>{langItem.flag}</span>
-                        <span>{langItem.code.toUpperCase()}</span>
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => {
-                      if (onlineBookLang === "all") return;
-                      activeReqIdRef.current++;
-                      setOnlineBooks([]);
-                      setOnlineBookLang("all");
-                      setOnlineTopic("all");
-                      setActiveSearchQuery("");
-                      setHeaderOnlineSearchInput("");
-                      setTabCategorySearchInput("");
-                      setActiveSearchScope("category");
-                      if (scrollContainerRef.current) {
-                        scrollContainerRef.current.scrollTo({
-                          top: 0,
-                          behavior: "instant",
-                        });
-                      }
-                    }}
-                    className={`col-span-3 mt-1 py-1 px-2 rounded-lg text-[10px] font-medium transition-all text-center ${
-                      onlineBookLang === "all"
-                        ? "bg-emerald-500 text-black font-bold shadow-sm"
-                        : "bg-[#23242e] text-gray-400 hover:text-white hover:bg-[#2b2c37]"
-                    }`}
-                  >
-                    {t.online.allLanguages}
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-800/80 my-3" />
-
-              {/* Book Source Filter */}
-              <div className="mb-4 px-2">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
-                    Nguồn thư viện trực tuyến
+                {/* Book Language Quick Filter Strip */}
+                <div className="mb-4 px-2">
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block mb-1.5">
+                    {t.online.languageFilterLabel}
                   </label>
-                  <span className="text-[10px] text-amber-400/90 font-medium font-mono">
-                    3 kho mở
-                  </span>
-                </div>
-                <div className="flex flex-col space-y-1">
-                  {[
-                    {
-                      id: "all" as const,
-                      label: "Tất cả kho mở",
-                      badge: "Toàn bộ",
-                      desc: "Tìm trên cả 3 kho sách mở",
-                    },
-                    {
-                      id: "archive" as const,
-                      label: "Internet Archive",
-                      badge: "12K+ VN",
-                      desc: "12.000+ Sách tiếng Việt & tài liệu số",
-                    },
-                    {
-                      id: "gutenberg" as const,
-                      label: "Project Gutenberg",
-                      badge: "70K+",
-                      desc: "70.000+ Tác phẩm kinh điển quốc tế",
-                    },
-                    {
-                      id: "openlibrary" as const,
-                      label: "Open Library",
-                      badge: "Mở",
-                      desc: "Thư viện mở toàn cầu",
-                    },
-                  ].map((src) => {
-                    const isSrcActive = sourceFilter === src.id;
-                    return (
-                      <button
-                        key={src.id}
-                        type="button"
-                        onClick={() => {
-                          if (sourceFilter === src.id && !activeSearchQuery)
-                            return;
-                          handleSourceSearch(src.id, activeSearchQuery);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all text-left ${
-                          isSrcActive
-                            ? "bg-amber-500/15 text-amber-300 border border-amber-500/40 font-semibold shadow-sm"
-                            : "text-gray-400 hover:text-gray-200 hover:bg-[#23242e] border border-transparent"
-                        }`}
-                        title={src.desc}
-                      >
-                        <span className="truncate">{src.label}</span>
-                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/30 text-gray-400 ml-1 flex-shrink-0">
-                          {src.badge}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="border-t border-gray-800/80 my-3" />
-
-              {/* Vertical Category Filter (Pure text, NO ICONS, NO SEARCH BUTTONS) */}
-              <div className="mb-2 px-2 flex items-center justify-between">
-                <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
-                  Thể loại sách
-                </label>
-                <span className="text-[10px] text-emerald-400/90 font-medium font-mono">
-                  10 thể loại
-                </span>
-              </div>
-              <nav className="flex flex-col space-y-1">
-                {categoryList.map((cat) => {
-                  const isActive = onlineTopic === cat.id;
-                  return (
+                  <div className="grid grid-cols-3 gap-1">
+                    {SUPPORTED_LANGUAGES.map((langItem) => {
+                      const isLangActive = onlineBookLang === langItem.code;
+                      return (
+                        <button
+                          key={langItem.code}
+                          onClick={() => {
+                            if (onlineBookLang === langItem.code) return;
+                            activeReqIdRef.current++;
+                            setOnlineBooks([]);
+                            setOnlineBookLang(langItem.code);
+                            if (langItem.code === "vi") {
+                              setOnlineTopic("vietnamese");
+                            } else {
+                              setOnlineTopic("recommended");
+                            }
+                            setActiveSearchQuery("");
+                            setHeaderOnlineSearchInput("");
+                            setTabCategorySearchInput("");
+                            setActiveSearchScope("category");
+                            if (scrollContainerRef.current) {
+                              scrollContainerRef.current.scrollTo({
+                                top: 0,
+                                behavior: "instant",
+                              });
+                            }
+                          }}
+                          className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all text-center flex items-center justify-center gap-1 ${
+                            isLangActive
+                              ? "bg-emerald-500 text-black font-bold shadow-sm"
+                              : "bg-[#23242e] text-gray-400 hover:text-white hover:bg-[#2b2c37]"
+                          }`}
+                        >
+                          <span>{langItem.flag}</span>
+                          <span>{langItem.code.toUpperCase()}</span>
+                        </button>
+                      );
+                    })}
                     <button
-                      key={cat.id}
-                      type="button"
                       onClick={() => {
-                        if (onlineTopic === cat.id && !activeSearchQuery)
-                          return;
+                        if (onlineBookLang === "all") return;
                         activeReqIdRef.current++;
                         setOnlineBooks([]);
-                        setOnlineTopic(cat.id);
+                        setOnlineBookLang("all");
+                        setOnlineTopic("all");
                         setActiveSearchQuery("");
+                        setHeaderOnlineSearchInput("");
                         setTabCategorySearchInput("");
                         setActiveSearchScope("category");
                         if (scrollContainerRef.current) {
@@ -1440,24 +1358,135 @@ export const Library: React.FC<LibraryProps> = ({
                           });
                         }
                       }}
-                      className={`w-full text-left truncate px-3 py-2 rounded-xl text-xs transition-all ${
-                        isActive
-                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-semibold shadow-sm"
-                          : "text-gray-400 hover:text-gray-100 hover:bg-[#23242e] border border-transparent"
+                      className={`col-span-3 mt-1 py-1 px-2 rounded-lg text-[10px] font-medium transition-all text-center ${
+                        onlineBookLang === "all"
+                          ? "bg-emerald-500 text-black font-bold shadow-sm"
+                          : "bg-[#23242e] text-gray-400 hover:text-white hover:bg-[#2b2c37]"
                       }`}
-                      title={cat.label}
                     >
-                      {cat.label}
+                      {t.online.allLanguages}
                     </button>
-                  );
-                })}
-              </nav>
+                  </div>
+                </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-800/80 px-2 text-[11px] text-gray-500 leading-relaxed">
-                {t.online.publicDomainNotice}
-              </div>
-            </aside>
-          )}
+                <div className="border-t border-gray-800/80 my-3" />
+
+                {/* Book Source Filter */}
+                <div className="mb-4 px-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
+                      Nguồn thư viện trực tuyến
+                    </label>
+                    <span className="text-[10px] text-amber-400/90 font-medium font-mono">
+                      3 kho mở
+                    </span>
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    {[
+                      {
+                        id: "all" as const,
+                        label: "Tất cả kho mở",
+                        badge: "Toàn bộ",
+                        desc: "Tìm trên cả 3 kho sách mở",
+                      },
+                      {
+                        id: "archive" as const,
+                        label: "Internet Archive",
+                        badge: "12K+ VN",
+                        desc: "12.000+ Sách tiếng Việt & tài liệu số",
+                      },
+                      {
+                        id: "gutenberg" as const,
+                        label: "Project Gutenberg",
+                        badge: "70K+",
+                        desc: "70.000+ Tác phẩm kinh điển quốc tế",
+                      },
+                      {
+                        id: "openlibrary" as const,
+                        label: "Open Library",
+                        badge: "Mở",
+                        desc: "Thư viện mở toàn cầu",
+                      },
+                    ].map((src) => {
+                      const isSrcActive = sourceFilter === src.id;
+                      return (
+                        <button
+                          key={src.id}
+                          type="button"
+                          onClick={() => {
+                            if (sourceFilter === src.id && !activeSearchQuery)
+                              return;
+                            handleSourceSearch(src.id, activeSearchQuery);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all text-left ${
+                            isSrcActive
+                              ? "bg-amber-500/15 text-amber-300 border border-amber-500/40 font-semibold shadow-sm"
+                              : "text-gray-400 hover:text-gray-200 hover:bg-[#23242e] border border-transparent"
+                          }`}
+                          title={src.desc}
+                        >
+                          <span className="truncate">{src.label}</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/30 text-gray-400 ml-1 flex-shrink-0">
+                            {src.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-800/80 my-3" />
+
+                {/* Vertical Category Filter (Pure text, NO ICONS, NO SEARCH BUTTONS) */}
+                <div className="mb-2 px-2 flex items-center justify-between">
+                  <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
+                    Thể loại sách
+                  </label>
+                  <span className="text-[10px] text-emerald-400/90 font-medium font-mono">
+                    10 thể loại
+                  </span>
+                </div>
+                <nav className="flex flex-col space-y-1">
+                  {categoryList.map((cat) => {
+                    const isActive = onlineTopic === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          if (onlineTopic === cat.id && !activeSearchQuery)
+                            return;
+                          activeReqIdRef.current++;
+                          setOnlineBooks([]);
+                          setOnlineTopic(cat.id);
+                          setActiveSearchQuery("");
+                          setTabCategorySearchInput("");
+                          setActiveSearchScope("category");
+                          if (scrollContainerRef.current) {
+                            scrollContainerRef.current.scrollTo({
+                              top: 0,
+                              behavior: "instant",
+                            });
+                          }
+                        }}
+                        className={`w-full text-left truncate px-3 py-2 rounded-xl text-xs transition-all ${
+                          isActive
+                            ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-semibold shadow-sm"
+                            : "text-gray-400 hover:text-gray-100 hover:bg-[#23242e] border border-transparent"
+                        }`}
+                        title={cat.label}
+                      >
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                <div className="mt-6 pt-4 border-t border-gray-800/80 px-2 text-[11px] text-gray-500 leading-relaxed">
+                  {t.online.publicDomainNotice}
+                </div>
+              </aside>
+            )}
 
             {/* Right Column: Book Grid + Lazy Loading */}
             <section className="flex-1 w-full min-w-0">
@@ -1492,14 +1521,20 @@ export const Library: React.FC<LibraryProps> = ({
                           ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
                           : "bg-[#22232c] text-gray-300 border-gray-700/60 hover:text-white hover:bg-[#2b2c37]"
                       }`}
-                      title={showOnlineFilter ? "Ẩn bộ lọc trực tuyến" : "Hiện bộ lọc trực tuyến"}
+                      title={
+                        showOnlineFilter
+                          ? "Ẩn bộ lọc trực tuyến"
+                          : "Hiện bộ lọc trực tuyến"
+                      }
                     >
                       {showOnlineFilter ? (
                         <PanelLeftClose className="w-3.5 h-3.5 text-emerald-400" />
                       ) : (
                         <PanelLeftOpen className="w-3.5 h-3.5 text-emerald-400" />
                       )}
-                      <span>{showOnlineFilter ? "Ẩn bộ lọc" : "Hiện bộ lọc"}</span>
+                      <span>
+                        {showOnlineFilter ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+                      </span>
                     </button>
 
                     <div className="h-4 w-[1px] bg-gray-800 hidden sm:block" />
@@ -1821,7 +1856,9 @@ export const Library: React.FC<LibraryProps> = ({
               {books.length}
             </span>
           </div>
-          <span className="text-[11px] mt-1 font-medium tracking-tight">Kệ sách</span>
+          <span className="text-[11px] mt-1 font-medium tracking-tight">
+            Kệ sách
+          </span>
         </button>
 
         <div className="w-[1px] h-6 bg-gray-800" />
@@ -1842,7 +1879,9 @@ export const Library: React.FC<LibraryProps> = ({
             <Globe className="w-5 h-5" />
             <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <span className="text-[11px] mt-1 font-medium tracking-tight">Khám phá</span>
+          <span className="text-[11px] mt-1 font-medium tracking-tight">
+            Khám phá
+          </span>
         </button>
       </nav>
 
@@ -1864,7 +1903,9 @@ export const Library: React.FC<LibraryProps> = ({
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-amber-400" />
                 <h3 className="text-base font-bold text-white">
-                  {activeTab === "my-shelf" ? "Bộ lọc Thể loại Kệ sách" : "Bộ lọc Thư viện Trực tuyến"}
+                  {activeTab === "my-shelf"
+                    ? "Bộ lọc Thể loại Kệ sách"
+                    : "Bộ lọc Thư viện Trực tuyến"}
                 </h3>
               </div>
               <button
@@ -1884,7 +1925,9 @@ export const Library: React.FC<LibraryProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     <span>Thể loại sách cá nhân</span>
-                    <span className="font-mono text-amber-400">{books.length} cuốn</span>
+                    <span className="font-mono text-amber-400">
+                      {books.length} cuốn
+                    </span>
                   </div>
                   <div className="grid grid-cols-1 gap-1.5">
                     <button
@@ -1966,7 +2009,8 @@ export const Library: React.FC<LibraryProps> = ({
                               activeReqIdRef.current++;
                               setOnlineBooks([]);
                               setOnlineBookLang(langItem.code);
-                              if (langItem.code === "vi") setOnlineTopic("vietnamese");
+                              if (langItem.code === "vi")
+                                setOnlineTopic("vietnamese");
                               else setOnlineTopic("recommended");
                               setActiveSearchQuery("");
                               setHeaderOnlineSearchInput("");
@@ -2053,7 +2097,8 @@ export const Library: React.FC<LibraryProps> = ({
                     </span>
                     <div className="grid grid-cols-1 gap-1.5">
                       {categoryList.map((cat) => {
-                        const isSelected = onlineTopic === cat.id && !activeSearchQuery;
+                        const isSelected =
+                          onlineTopic === cat.id && !activeSearchQuery;
                         return (
                           <button
                             key={cat.id}
@@ -2080,7 +2125,9 @@ export const Library: React.FC<LibraryProps> = ({
                               <span>{cat.label}</span>
                             </div>
                             {isSelected && (
-                              <span className="text-xs font-bold text-emerald-400">✓ Đang chọn</span>
+                              <span className="text-xs font-bold text-emerald-400">
+                                ✓ Đang chọn
+                              </span>
                             )}
                           </button>
                         );

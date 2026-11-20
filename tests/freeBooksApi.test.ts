@@ -207,5 +207,55 @@ End of text.
       expect(result.pages[0]).toContain('Masaru Emoto');
       expect(result.pages[0]).toContain('Tác phẩm nghiên cứu về tinh thể nước');
     });
+
+    it('downloads and imports a comic book into CBZ format with comic pages', async () => {
+      const comicOnlineBook: OnlineBook = {
+        id: 'online-comic-doraemon',
+        title: 'Doraemon Truyện Tranh Màu',
+        author: 'Fujiko F. Fujio',
+        language: 'vi',
+        genre: 'Truyện tranh & Manga',
+        format: 'cbz',
+        isComic: true,
+        source: 'curated',
+        comicPages: [
+          '<svg><text>Trang 1: Bìa</text></svg>',
+          '<svg><text>Trang 2: Nobita gặp Doraemon</text></svg>',
+        ],
+      };
+
+      const result = await api.downloadAndImportBook(comicOnlineBook);
+      expect(result.book.format).toBe('cbz');
+      expect(result.book.isComic).toBe(true);
+      expect(result.book.genre).toBe('Truyện tranh & Manga');
+      expect(result.pages.length).toBe(2);
+      expect(result.pages[0]).toContain('Trang 1: Bìa');
+    });
+
+    it('searches comics category and prepends curated comic collection', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            numFound: 1,
+            start: 0,
+            docs: [
+              {
+                identifier: 'flash-gordon-comic',
+                title: 'Flash Gordon Comic',
+                creator: 'Alex Raymond',
+                year: 1934,
+                downloads: 4500,
+              },
+            ],
+          },
+        }),
+      } as any);
+
+      const res = await api.searchBooks('', 'comic', 1, 'vi', 'all');
+      expect(res.books.length).toBeGreaterThan(0);
+      const hasCuratedComic = res.books.some((b) => b.genre === 'Truyện tranh & Manga' && b.isComic);
+      expect(hasCuratedComic).toBe(true);
+    });
   });
 });

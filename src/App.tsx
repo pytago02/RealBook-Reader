@@ -248,6 +248,29 @@ export const App: React.FC = () => {
           setIsLoading(false);
           return;
         } else if (book.format === 'cbz') {
+          // Check if fileData is JSON string array (e.g. downloaded online comics) or binary CBZ/ZIP
+          try {
+            const decoder = new TextDecoder('utf-8');
+            const sample = decoder.decode(fileData.slice(0, 100));
+            if (sample.trim().startsWith('[') || sample.trim().startsWith('{')) {
+              const fullText = decoder.decode(fileData);
+              const jsonPages = JSON.parse(fullText);
+              if (Array.isArray(jsonPages) && jsonPages.length > 0) {
+                setTextPages(jsonPages);
+                setPdfDoc(null);
+                setToc(
+                  jsonPages.map((_, i) => ({
+                    title: `Trang ${i + 1}`,
+                    page: i + 1,
+                  }))
+                );
+                window.clearTimeout(failsafeTimer);
+                setIsLoading(false);
+                return;
+              }
+            }
+          } catch {}
+
           const parsed = await cbzParser.parseCbz(fileData.slice(0), book.title);
           setTextPages(parsed.pages);
           setPdfDoc(null);

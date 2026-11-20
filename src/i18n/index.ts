@@ -44,7 +44,6 @@ export interface TranslationDictionary {
     bannerTitle: string;
     bannerDesc: string;
     exploreOnline: string;
-    demoSample: string;
     emptyTitle: string;
     emptyDesc: string;
     pagesCount: string;
@@ -83,6 +82,7 @@ export interface TranslationDictionary {
       adventure: string;
       psychology: string;
       poetry: string;
+      comic: string;
     };
   };
   reader: {
@@ -175,7 +175,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: 'Kệ sách của bạn ({count} cuốn)',
       bannerDesc: 'Hỗ trợ đầy đủ định dạng PDF, DOCX, TXT. Lật trang 3D chân thực, tự động lưu tiến trình và bảo vệ mắt với 5 bộ theme ngả vàng, E-ink.',
       exploreOnline: 'Khám phá kho sách Online',
-      demoSample: 'Sách mẫu demo',
       emptyTitle: 'Không tìm thấy sách phù hợp',
       emptyDesc: 'Hãy kéo thả file PDF hoặc bấm nút "Mở file từ máy", hoặc chuyển qua tab "Kho sách Online" để tải sách miễn phí nhé.',
       pagesCount: '{count} trang',
@@ -214,6 +213,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: 'Trinh thám & Phiêu lưu',
         psychology: 'Tâm lý & Xã hội',
         poetry: 'Thơ ca & Kịch nghệ',
+        comic: 'Truyện tranh & Manga',
       },
     },
     reader: {
@@ -305,7 +305,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: 'Your Bookshelf ({count} books)',
       bannerDesc: 'Supports PDF, DOCX, and TXT files. Realistic 3D page flip, progress auto-saving, and 5 eye-friendly reading themes.',
       exploreOnline: 'Explore Online Library',
-      demoSample: 'Demo book',
       emptyTitle: 'No books found',
       emptyDesc: 'Drop PDF files here, click "Open local file", or browse the Online Library to download free masterpieces.',
       pagesCount: '{count} pages',
@@ -344,6 +343,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: 'Mystery & Adventure',
         psychology: 'Psychology & Society',
         poetry: 'Poetry & Drama',
+        comic: 'Comics & Manga',
       },
     },
     reader: {
@@ -435,7 +435,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: '您的私人书架（{count} 本）',
       bannerDesc: '完美支持 PDF、DOCX、TXT 格式。逼真3D仿真翻页、自动记忆进度与5款专业护眼主题。',
       exploreOnline: '探索在线书库',
-      demoSample: '示例典藏',
       emptyTitle: '未找到符合条件的图书',
       emptyDesc: '请拖拽文件至此，或点击“打开本地文件”，亦可前往“在线书库”免费下载传世名著。',
       pagesCount: '{count} 页',
@@ -474,6 +473,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: '悬疑与冒险',
         psychology: '心理与社会',
         poetry: '诗歌与戏剧',
+        comic: '漫画与连环画',
       },
     },
     reader: {
@@ -565,7 +565,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: 'Votre bibliothèque ({count} livres)',
       bannerDesc: 'Prend en charge PDF, DOCX et TXT. Tourne-page 3D réaliste, sauvegarde automatique et 5 thèmes de lecture confortables.',
       exploreOnline: 'Explorer la bibliothèque en ligne',
-      demoSample: 'Livre de démonstration',
       emptyTitle: 'Aucun livre trouvé',
       emptyDesc: 'Glissez-déposez des fichiers ici ou explorez notre bibliothèque en ligne gratuite.',
       pagesCount: '{count} pages',
@@ -604,6 +603,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: 'Mystère & Aventure',
         psychology: 'Psychologie & Société',
         poetry: 'Poésie & Théâtre',
+        comic: 'Bandes dessinées & Manga',
       },
     },
     reader: {
@@ -695,7 +695,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: 'Tu estantería ({count} libros)',
       bannerDesc: 'Compatible con PDF, DOCX y TXT. Efecto de cambio de página en 3D, autoguardado y 5 temas agradables a la vista.',
       exploreOnline: 'Explorar biblioteca online',
-      demoSample: 'Libro de prueba',
       emptyTitle: 'No se encontraron libros',
       emptyDesc: 'Arrastra y suelta libros aquí, haz clic en "Abrir archivo", o descarga clásicos desde la tienda online.',
       pagesCount: '{count} páginas',
@@ -734,6 +733,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: 'Misterio y Aventura',
         psychology: 'Psicología y Sociedad',
         poetry: 'Poesía y Teatro',
+        comic: 'Cómics y Manga',
       },
     },
     reader: {
@@ -825,7 +825,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       bannerTitle: 'あなたの本棚（{count} 冊）',
       bannerDesc: 'PDF、DOCX、TXTに対応。リアルな3Dページめくり、自動進捗保存、5種類の目に優しいテーマを搭載。',
       exploreOnline: 'オンライン書庫を見る',
-      demoSample: 'サンプル書籍',
       emptyTitle: '本が見つかりませんでした',
       emptyDesc: 'ファイルをドラッグ＆ドロップするか、「ファイルを開く」をクリックして本を追加してください。',
       pagesCount: '{count} ページ',
@@ -864,6 +863,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
         adventure: '推理・冒険',
         psychology: '心理・社会',
         poetry: '詩歌・戯曲',
+        comic: '漫画・コミック',
       },
     },
     reader: {

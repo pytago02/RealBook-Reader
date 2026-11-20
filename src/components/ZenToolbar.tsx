@@ -19,6 +19,7 @@ import {
   Focus,
   Sparkles,
   FileText,
+  Layers,
 } from "lucide-react";
 import type { Book, ReaderSettings } from "../types";
 import { getTranslation } from "../i18n";
@@ -81,6 +82,7 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
   const t = getTranslation(settings.language || "vi");
   const percent =
     totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
+  const isComic = book.format === 'cbz' || book.isComic;
   const zoomPercent = Math.round((settings.zoom || 1.0) * 100);
 
   return (
@@ -210,21 +212,33 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
             </button>
           )}
 
-          {/* Viewer Mode Toggle (Realistic Book vs Reflow text) */}
+          {/* Viewer Mode Toggle (Realistic 3D vs Webtoon Scroll) */}
           <button
             onClick={onToggleViewerMode}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors inline-flex items-center gap-1 ${
               settings.viewerMode === "reflow"
                 ? "bg-amber-500/20 text-amber-500 font-bold"
                 : "hover:bg-black/10 dark:hover:bg-white/10"
             }`}
             title={
-              settings.viewerMode === "realistic"
+              isComic
+                ? settings.viewerMode === "realistic"
+                  ? "Chuyển sang chế độ Cuộn dọc Webtoon"
+                  : "Chuyển sang chế độ Lật trang truyện tranh"
+                : settings.viewerMode === "realistic"
                 ? t.reader.viewerMode3D
                 : t.reader.viewerModeScroll
             }
           >
-            <BookOpen className="w-4 h-4" />
+            {isComic ? (
+              settings.viewerMode === "reflow" ? (
+                <BookOpen className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Layers className="w-4 h-4 text-amber-400" />
+              )
+            ) : (
+              <BookOpen className="w-4 h-4" />
+            )}
           </button>
 
           {/* Eye Comfort Theme */}
@@ -236,14 +250,16 @@ export const ZenToolbar: React.FC<ZenToolbarProps> = ({
             <SunMedium className="w-4 h-4" />
           </button>
 
-          {/* Typography Controls */}
-          <button
-            onClick={onOpenTypographyModal}
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            title={t.reader.typography}
-          >
-            <Type className="w-4 h-4" />
-          </button>
+          {/* Typography Controls (Only for text books) */}
+          {!isComic && (
+            <button
+              onClick={onOpenTypographyModal}
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              title={t.reader.typography}
+            >
+              <Type className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Sound Toggle */}
           <button

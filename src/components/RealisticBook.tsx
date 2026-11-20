@@ -47,6 +47,11 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isSliding, setIsSliding] = useState<'next' | 'prev' | null>(null);
   const [disableTransition, setDisableTransition] = useState<boolean>(false);
+  const [comicZoom, setComicZoom] = useState<number>(1.0);
+
+  useEffect(() => {
+    setComicZoom(1.0);
+  }, [currentPage]);
 
   // Mouse gesture coordination
   const dragModeRef = useRef<'scroll' | 'slide' | null>(null);
@@ -377,10 +382,19 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       rawContent.trim().startsWith('<svg');
 
     if (isImagePage) {
-      const userZoom = settings.zoom || 1.0;
+      const userZoom = (settings.zoom || 1.0) * comicZoom;
+      const handleToggleZoom = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setComicZoom((z) => (z === 1.0 ? 1.75 : 1.0));
+      };
+
       if (rawContent.trim().startsWith('<svg')) {
         return (
-          <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden p-0 sm:p-1 select-none">
+          <div
+            className={`flex-1 w-full h-full flex items-center justify-center p-0 sm:p-1 select-none ${comicZoom > 1.0 ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'}`}
+            onDoubleClick={handleToggleZoom}
+            title={comicZoom > 1.0 ? 'Chạm đúp để thu nhỏ lại' : 'Chạm đúp để phóng to khung thoại'}
+          >
             <div
               className="w-full h-full flex items-center justify-center [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:object-contain shadow-md rounded"
               dangerouslySetInnerHTML={{ __html: rawContent }}
@@ -395,7 +409,11 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
       }
 
       return (
-        <div className="flex-1 w-full h-full flex items-center justify-center overflow-hidden p-0 sm:p-1 select-none">
+        <div
+          className={`flex-1 w-full h-full flex items-center justify-center p-0 sm:p-1 select-none ${comicZoom > 1.0 ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'}`}
+          onDoubleClick={handleToggleZoom}
+          title={comicZoom > 1.0 ? 'Chạm đúp để thu nhỏ lại' : 'Chạm đúp để phóng to khung thoại'}
+        >
           <img
             src={rawContent}
             alt={`Trang ${pageNum}`}
@@ -531,7 +549,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
                 title="Bỏ đánh dấu trang này"
               />
             )}
-            <div className="absolute inset-y-0 right-0 w-16 book-spine-shadow-right pointer-events-none z-20" />
+            {!isComic && (
+              <div className="absolute inset-y-0 right-0 w-16 book-spine-shadow-right pointer-events-none z-20" />
+            )}
             {!isComicOrScan && (
               <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
                 <span className="truncate max-w-[200px]">{book.title}</span>
@@ -562,7 +582,7 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
           </div>
 
           {/* REALISTIC BOOK CENTER SPINE */}
-          <div className="w-3 bg-gradient-to-r from-black/25 via-black/10 to-black/25 shadow-inner relative z-20 flex-shrink-0" />
+          <div className={`${isComic ? 'w-[1px] bg-black/40' : 'w-3 bg-gradient-to-r from-black/25 via-black/10 to-black/25 shadow-inner'} relative z-20 flex-shrink-0`} />
 
           {/* RIGHT PAGE */}
           <div
@@ -581,7 +601,9 @@ export const RealisticBook: React.FC<RealisticBookProps> = ({
                 title="Bỏ đánh dấu trang này"
               />
             )}
-            <div className="absolute inset-y-0 left-0 w-16 book-spine-shadow-left pointer-events-none z-20" />
+            {!isComic && (
+              <div className="absolute inset-y-0 left-0 w-16 book-spine-shadow-left pointer-events-none z-20" />
+            )}
             {!isComicOrScan && (
               <div className="flex justify-between items-center text-xs opacity-50 font-mono mb-1.5 z-10">
                 <div className="flex items-center gap-1.5">
